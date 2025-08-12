@@ -1,0 +1,521 @@
+@model LMS.Models.Course
+
+@using System.Security.Claims
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+     var activeTab = Context.Request.Query["tab"].ToString()?.ToLower() ?? "overview";
+    var submissions = ViewBag.Submissions as List<LMS.Models.AssignmentSubmission>;
+    string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    int parsedUserId = 0;
+    int.TryParse(userId, out parsedUserId); // Safe even if userId is null/empty
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a asp-controller="Student" asp-action="MyCourses">
+                <i class="fas fa-graduation-cap"></i> My Courses
+            </a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            <i class="fas fa-book"></i> @Model.FullName
+        </li>
+        <li class="breadcrumb-item active" id="activeTabLabel" aria-current="page">
+            <i class="fas fa-info-circle"></i> Course
+        </li>
+    </ol>
+</nav>
+
+<div class="container mt-2">
+    <ul class="nav nav-tabs mb-3" id="courseTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
+                <span class="badge bg-primary"><i class="fas fa-info-circle me-1"></i>Course</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab">
+                <span class="badge bg-success"><i class="fas fa-users me-1"></i>Participants</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
+                <span class="badge bg-info"><i class="fas fa-folder-open me-1"></i>Materials</span>
+            </button>
+        </li>
+         <li class="nav-item" role="presentation">
+    <button class="nav-link" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
+        <span class="badge bg-warning text-dark"><i class="fas fa-video me-1"></i>Live Classes</span>
+    </button>
+</li>
+
+        <li class="nav-item" role="presentation">
+    <button class="nav-link @(activeTab == "assignments" ? "active" : "")" id="assignments-tab"
+            data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+        <span class="badge bg-warning text-dark">
+            <i class="fas fa-tasks me-1"></i>Assignments
+        </span>
+    </button>
+</li>
+
+    </ul>
+
+    <div class="tab-content" id="courseTabContent">
+        <!-- Course Info Tab -->
+        <div class="tab-pane fade show active" id="course" role="tabpanel">
+            <div class="card shadow-sm mb-3">
+                <img src="~/@(string.IsNullOrEmpty(Model.ImagePath) ? "images/default-course.png" : Model.ImagePath)" class="card-img-top" style="height:220px; object-fit:cover;" />
+                <div class="card-body">
+                    <h2>@Model.FullName</h2>
+                    <h5 class="text-muted">@Model.ShortName</h5>
+                    <p><strong>Category:</strong> @Model.Category</p>
+                    <p><strong>Course ID Number:</strong> @Model.CourseIdNumber</p>
+                    <p><strong>Start Date:</strong> @Model.StartDate.ToShortDateString()</p>
+                    <p><strong>End Date:</strong> @(Model.EndDate?.ToShortDateString() ?? "N/A")</p>
+                    <p><strong>Summary:</strong> @Model.Summary</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Participants Tab -->
+        <div class="tab-pane fade" id="participants" role="tabpanel">
+            <h5>Enrolled Students</h5>
+            @if (Model.Enrollments != null && Model.Enrollments.Any())
+            {
+                <table class="table table-striped table-bordered align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>S.N.</th>
+                            <th>Full Name</th>
+                            <th>Date of Birth</th>
+                            <th>Guardian Name</th>
+                            <th>Grade</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int sn = 1;
+                            foreach (var enrollment in Model.Enrollments)
+                            {
+                                var s = enrollment.Student;
+                                <tr>
+                                    <td>@sn</td>
+                                    <td>@s?.FirstName @s?.LastName</td>
+                                    <td>@s?.DateOfBirth.ToShortDateString()</td>
+                                    <td>@s?.GuardianName</td>
+                                    <td>@s?.Grade</td>
+                                    <td>@s?.Email</td>
+                                    <td>@s?.PhoneNumber</td>
+                                </tr>
+                                sn++;
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">No students enrolled yet.</div>
+            }
+        </div>
+
+       <!-- Materials Tab -->
+<div class="tab-pane fade" id="materials" role="tabpanel">
+    <h5 class="mb-3">Course Materials</h5>
+
+    @* Filter out assignment materials *@
+    @{
+        var assignmentMaterials = Model.Assignments?
+            .SelectMany(a => a.Materials ?? new List<LMS.Models.Material>())
+            .ToList() ?? new List<LMS.Models.Material>();
+
+        var courseMaterials = Model.Materials?
+            .Where(m => !assignmentMaterials.Contains(m))
+            .ToList() ?? new List<LMS.Models.Material>();
+    }
+
+    @if (courseMaterials.Any())
+    {
+        <ul class="list-group mb-4">
+            @foreach (var material in courseMaterials)
+            {
+                var filePath = Url.Content("~/" + material.FilePath);
+                var ext = System.IO.Path.GetExtension(material.FilePath)?.ToLower() ?? "";
+
+                <li class="list-group-item mb-3">
+                    <h6>@material.Title</h6>
+                    @if (!string.IsNullOrEmpty(material.Description))
+                    {
+                        <p class="text-muted">@material.Description</p>
+                    }
+                    <div class="mb-2">
+                        @if (ext == ".pdf")
+                        {
+                            <iframe src="@filePath" style="width:100%; height:400px;" frameborder="0"></iframe>
+                        }
+                        else if (new string[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" }.Contains(ext))
+                        {
+                            <img src="@filePath" class="img-fluid" alt="@material.Title" />
+                        }
+                        else if (new string[] { ".mp4", ".webm", ".ogg" }.Contains(ext))
+                        {
+                            <video controls style="width:100%; max-height:400px;">
+                                <source src="@filePath" type="video/@ext.TrimStart('.')">
+                                Your browser does not support the video tag.
+                            </video>
+                        }
+                        else
+                        {
+                            <p>No preview available.</p>
+                        }
+                    </div>
+                    <a href="@filePath" target="_blank" class="btn btn-outline-primary btn-sm mb-3">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <div class="alert alert-info">No materials uploaded yet.</div>
+    }
+</div>
+
+
+<!-- Live Classes Tab -->
+<div class="tab-pane fade show active" id="live-classes" role="tabpanel">
+    <h5 class="mb-3">Live Classes</h5>
+
+    @if (Model.LiveClasses != null && Model.LiveClasses.Any())
+    {
+        <!-- Table View -->
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.LiveClasses)
+                    {
+                        var isOngoing = DateTime.Now >= item.StartTime && DateTime.Now <= item.EndTime;
+                        var isUpcoming = DateTime.Now < item.StartTime;
+
+                        <tr>
+                            <td>@item.Title</td>
+                            <td>@item.StartTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td>@item.EndTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td>@item.Description</td>
+                            <td>
+                                @if (item.IsCompleted)
+                                {
+                                    <span class="badge bg-danger">Ended</span>
+                                }
+                                else if (item.IsLive)
+                                {
+                                    <span class="badge bg-success">Live</span>
+                                }
+                                else if (isUpcoming)
+                                {
+                                    <span class="badge bg-info text-dark">Upcoming</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Pending</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsLive && DateTime.Now < item.EndTime)
+                                {
+                                    <a href="@Url.Action("JoinLiveClass", "Student", new { id = item.Id })"
+                                       class="btn btn-sm btn-success me-2" target="_blank">
+                                        <i class="bi bi-camera-video"></i> Join
+                                    </a>
+
+                                    <a href="@Url.Action("LeaveLiveClass", "Student", new { id = item.Id })"
+                                       class="btn btn-sm btn-warning">
+                                        <i class="bi bi-box-arrow-left"></i> Leave
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No Action</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Optional: Card/List View -->
+        <h6>Live Class Details</h6>
+        <ul class="list-group">
+            @foreach (var liveClass in Model.LiveClasses)
+            {
+                var isOngoing = DateTime.Now >= liveClass.StartTime && DateTime.Now <= liveClass.EndTime;
+
+                <li class="list-group-item mb-3">
+                    <h5>@liveClass.Title</h5>
+                    <p>@liveClass.Description</p>
+                    <small>
+                        Scheduled: 
+                        @liveClass.StartTime.ToString("MMM dd, yyyy hh:mm tt") - 
+                        @liveClass.EndTime.ToString("MMM dd, yyyy hh:mm tt")
+                    </small>
+                    <div class="mt-2">
+                        @if (liveClass.IsLive && DateTime.Now < liveClass.EndTime)
+                        {
+                            <a href="@Url.Action("JoinLiveClass", "Student", new { id = liveClass.Id })"
+                               class="btn btn-primary me-2" target="_blank">
+                                <i class="bi bi-camera-video"></i> Join Live Class
+                            </a>
+
+                            <a href="@Url.Action("LeaveLiveClass", "Student", new { id = liveClass.Id })"
+                               class="btn btn-outline-danger">
+                                <i class="bi bi-box-arrow-left"></i> Leave
+                            </a>
+                        }
+                        else if (liveClass.IsCompleted)
+                        {
+                            <span class="text-muted">Class Ended</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not Started</span>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <div class="alert alert-info">No live classes scheduled yet.</div>
+    }
+</div>
+
+
+
+      <!-- Assignments Tab -->
+<div class="tab-pane fade" id="assignments" role="tabpanel" aria-labelledby="assignments-tab">
+    @if (Model.Assignments != null && Model.Assignments.Any())
+    {
+        <ul class="list-group">
+            @foreach (var assignment in Model.Assignments)
+            {
+                // Get student's submission for this assignment
+                var submission = submissions.FirstOrDefault(s => s.AssignmentId == assignment.Id && s.StudentId == parsedUserId);
+                var collapseId = $"score-{assignment.Id}"; // unique collapse ID for Bootstrap
+                
+                <li class="list-group-item mb-4">
+                    <h5>@assignment.Title</h5>
+                    <p>@assignment.Description</p>
+                    <small class="text-muted">Due: @assignment.DueDate.ToString("MMM dd, yyyy") | Max Points: @assignment.PossiblePoints</small>
+
+                    @* Assignment Materials *@
+                    @if (assignment.Materials != null && assignment.Materials.Any())
+                    {
+                        <div class="mt-3 mb-3">
+                            <strong>Resources:</strong>
+                            <ul class="list-group">
+                                @foreach (var material in assignment.Materials)
+                                {
+                                    var filePath = Url.Content("~/" + material.FilePath);
+                                    var ext = System.IO.Path.GetExtension(material.FilePath)?.ToLower() ?? "";
+                                    <li class="list-group-item">
+                                        <div><strong>@material.Title</strong></div>
+                                        @if (!string.IsNullOrEmpty(material.Description))
+                                        {
+                                            <small class="text-muted">@material.Description</small>
+                                        }
+                                        <div class="mt-2">
+                                            @if (ext == ".pdf")
+                                            {
+                                                <iframe src="@filePath" style="width:100%; height:400px;" frameborder="0"></iframe>
+                                            }
+                                            else if (new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" }.Contains(ext))
+                                            {
+                                                <img src="@filePath" class="img-fluid" alt="@material.Title" style="max-height:400px;" />
+                                            }
+                                            else if (new[] { ".mp4", ".webm", ".ogg" }.Contains(ext))
+                                            {
+                                                <video controls style="width:100%; max-height:400px;">
+                                                    <source src="@filePath" type="video/@ext.TrimStart('.')">
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                            }
+                                            else
+                                            {
+                                                <a href="@filePath" target="_blank" class="btn btn-outline-info btn-sm me-2" rel="noopener noreferrer" >
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            }
+                                            <a href="@filePath" download class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @* Submission Form or Submission info *@
+                    @if (submission == null)
+                    {
+                        <form asp-action="SubmitAssignment" method="post" enctype="multipart/form-data" class="mt-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="AssignmentId" value="@assignment.Id" />
+                            <div class="mb-3">
+                                <label for="answerText-@assignment.Id" class="form-label">Answer (optional):</label>
+                                <textarea id="answerText-@assignment.Id" name="AnswerText" class="form-control" rows="3" placeholder="Write your answer here..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="submissionFile-@assignment.Id" class="form-label">File (required):</label>
+                                <input id="submissionFile-@assignment.Id" type="file" name="SubmissionFile" class="form-control" required />
+                            </div>
+                            <button type="submit" class="btn btn-success">Submit</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="mt-3">
+                            <p class="text-success"><i class="fas fa-check-circle"></i> Submitted</p>
+                            <small class="text-muted">Submitted at @submission.SubmittedAt.ToString("MMM dd, yyyy hh:mm tt")</small>
+
+                            @if (!submission.MarksObtained.HasValue)
+                            {
+                                <div class="alert alert-warning mt-3 d-flex align-items-center" role="alert">
+                                    <i class="fas fa-hourglass-half me-2"></i>
+                                    <div>Pending for Grading</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="btn btn-primary mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                                    View Score
+                                </button>
+                                <div class="collapse mt-3" id="@collapseId">
+                                    <table class="table table-bordered table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col" style="width:5%;">S.N.</th>
+                                                <th scope="col">Assignment</th>
+                                                <th scope="col" style="width:10%;">Marks</th>
+                                                <th scope="col" style="width:10%;">Status</th>
+                                                <th scope="col">Feedback</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>@(submissions.IndexOf(submission) + 1)</td>
+                                                <td>@assignment.Title</td>
+                                                <td>@submission.MarksObtained / @assignment.PossiblePoints</td>
+                                                <td>
+                                                    @if (submission.IsPassed == true)
+                                                    {
+                                                        <span class="badge bg-success">Passed</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">Failed</span>
+                                                    }
+                                                </td>
+                                                <td>@(string.IsNullOrWhiteSpace(submission.Feedback) ? "No feedback" : submission.Feedback)</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <div class="alert alert-info">No assignments available.</div>
+    }
+</div>
+
+
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["SuccessAssignment"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: '@TempData["SuccessAssignment"]'
+            });
+        </script>
+    }
+
+    @if (TempData["ErrorAssignment"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: '@TempData["ErrorAssignment"]'
+            });
+        </script>
+    }
+
+   <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tabButtons = document.querySelectorAll('#courseTab button[data-bs-toggle="tab"]');
+        const activeTabLabel = document.getElementById('activeTabLabel');
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabFromUrl = urlParams.get('tab');
+        const storageKey = 'activeCourseTabId';
+
+        function activateTabById(tabId) {
+            const targetTab = document.querySelector(`#courseTab button#${tabId}`);
+            if (targetTab) {
+                new bootstrap.Tab(targetTab).show();
+                // Set the label when showing tab programmatically
+                const tabText = targetTab.textContent.trim();
+                const icon = targetTab.querySelector('i')?.outerHTML || '';
+                activeTabLabel.innerHTML = `${icon} ${tabText}`;
+            }
+        }
+
+        if (tabFromUrl) {
+            const tabId = tabFromUrl + '-tab';
+            activateTabById(tabId);
+            localStorage.setItem(storageKey, tabId);
+        } else {
+            const storedTabId = localStorage.getItem(storageKey);
+            if (storedTabId) {
+                activateTabById(storedTabId);
+            }
+        }
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('shown.bs.tab', function (e) {
+                const tabText = e.target.textContent.trim();
+                const icon = e.target.querySelector('i')?.outerHTML || '';
+                activeTabLabel.innerHTML = `${icon} ${tabText}`;
+                localStorage.setItem(storageKey, e.target.id);
+            });
+        });
+    });
+</script>
+
+}  

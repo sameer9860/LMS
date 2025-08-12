@@ -1,0 +1,87 @@
+@model LMS.ViewModels.CourseViewModels
+
+@{
+    ViewBag.Title = "Create Course";
+}
+
+<h2>Create Course</h2>
+
+<form asp-action="CreateCourse" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label asp-for="FullName" class="form-label"></label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ShortName" class="form-label"></label>
+        <input asp-for="ShortName" class="form-control" />
+        <span asp-validation-for="ShortName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Category" class="form-label"></label>
+        <select asp-for="Category" class="form-select">
+            <option value="">-- Select Category --</option>
+            <option>Basic Level</option>
+            <option>Secondary 9-10</option>
+            <option>Secondary 11-12</option>
+            <option>Bachelors</option>
+            <option>Masters</option>
+        </select>
+        <span asp-validation-for="Category" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="IsVisible" class="form-check-input" />
+        <label asp-for="IsVisible" class="form-check-label">Show</label>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="StartDate" class="form-label"></label>
+            <input asp-for="StartDate" class="form-control" type="datetime-local" />
+            <span asp-validation-for="StartDate" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label asp-for="EndDate" class="form-label"></label>
+            <input asp-for="EndDate" class="form-control" type="datetime-local" />
+            <span asp-validation-for="EndDate" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="InstructorId" class="form-label">Instructor</label>
+        <select asp-for="InstructorId" asp-items="ViewBag.Instructors" class="form-select" required>
+            <option value="">-- Select Instructor --</option>
+        </select>
+        <span asp-validation-for="InstructorId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CourseIdNumber" class="form-label"></label>
+        <input asp-for="CourseIdNumber" class="form-control" />
+        <span asp-validation-for="CourseIdNumber" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Summary" class="form-label"></label>
+        <textarea asp-for="Summary" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Summary" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CourseImage" class="form-label">Course Image</label>
+        <input asp-for="CourseImage" class="form-control" type="file" accept=".jpg,.jpeg,.png" />
+        <span asp-validation-for="CourseImage" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Dashboard" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

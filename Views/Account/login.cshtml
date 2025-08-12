@@ -1,0 +1,143 @@
+@{
+    ViewBag.Title = "Login";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+<div class="login-bg">
+    <div class="login-card animate__animated animate__fadeInDown">
+        <div class="login-header">
+            <i class="fa-solid fa-user-circle fa-3x mb-2 text-primary"></i>
+            <h2>Login</h2>
+        </div>
+        <form method="post" autocomplete="off">
+            <div class="form-group mb-3">
+                <input name="username" placeholder="Username" class="form-control" required autofocus />
+            </div>
+            <div class="form-group mb-3 password-wrapper">
+                <input id="password" name="password" type="password" placeholder="Password" class="form-control" required />
+                <button type="button"
+                        class="eye-toggle-btn"
+                        onclick="togglePassword('password', this.querySelector('i'))"
+                        aria-label="Toggle password visibility"
+                        tabindex="-1">
+                    <i class="fa-solid fa-eye-slash"></i>
+                </button>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mb-2">Login</button>
+            <div class="error-message">@ViewBag.Error</div>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        background: linear-gradient(135deg, #007bff 0%, #6a11cb 100%);
+        min-height: 100vh;
+    }
+    .login-bg {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .login-card {
+        background: #fff;
+        padding: 36px 32px 28px 32px;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        max-width: 370px;
+        width: 100%;
+        animation-duration: 0.7s;
+    }
+    .login-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    .login-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .form-group {
+        position: relative;
+    }
+    .form-control {
+        width: 100%;
+        padding: 12px 40px 12px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 16px;
+        transition: border 0.2s;
+        background: #f8fafc;
+    }
+    .form-control:focus {
+        border-color: #007bff;
+        outline: none;
+        background: #fff;
+    }
+    .password-wrapper {
+        display: flex;
+        align-items: center;
+    }
+    .password-wrapper .form-control {
+        padding-right: 44px;
+    }
+    .eye-toggle-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: #6c757d;
+        padding: 0;
+        z-index: 2;
+    }
+    .eye-toggle-btn:focus {
+        outline: none;
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #007bff 0%, #6a11cb 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        font-size: 17px;
+        border-radius: 6px;
+        padding: 12px;
+        transition: background 0.2s;
+        box-shadow: 0 2px 8px rgba(106,17,203,0.08);
+    }
+    .btn-primary:hover {
+        background: linear-gradient(90deg, #0056b3 0%, #4e0fa2 100%);
+    }
+    .error-message {
+        color: #e74c3c;
+        text-align: center;
+        margin-top: 10px;
+        font-size: 15px;
+        min-height: 22px;
+    }
+    @@media (max-width: 500px) {
+        .login-card {
+            padding: 24px 8px 20px 8px;
+        }
+    }
+</style>
+
+<script>
+    function togglePassword(id, icon) {
+        const input = document.getElementById(id);
+        const isPassword = input.type === "password";
+        input.type = isPassword ? "text" : "password";
+        icon.classList.toggle("fa-eye");
+        icon.classList.toggle("fa-eye-slash");
+    }
+</script>

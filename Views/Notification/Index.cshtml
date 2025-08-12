@@ -1,0 +1,18 @@
+@model List<LMS.Models.Notification>
+@{
+    ViewBag.Title = "All Notifications";
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <h3>All Notifications</h3>
+    <ul class="list-group">
+        @foreach (var n in Model)
+        {
+            <li class="list-group-item">
+                <strong>@n.Title</strong>: @n.Message
+                <div class="text-muted small">@n.CreatedAt.ToString("g")</div>
+            </li>
+        }
+    </ul>
+</div>

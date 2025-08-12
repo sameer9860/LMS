@@ -1,0 +1,83 @@
+@model LMS.ViewModels.AssignmentViewModel
+
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+    ViewBag.Title = "Give Assignment";
+    ViewBag.ActiveMenu = "Assignments"; 
+}
+
+<h3 class="mb-3">Give Assignment</h3>
+
+<form asp-action="GiveAssignment" method="post" enctype="multipart/form-data" class="shadow p-4 bg-light rounded">
+    <input type="hidden" asp-for="CourseId" />
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Title</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Description (optional)</label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="File" class="form-label">Attach File (optional)</label>
+        <input asp-for="File" type="file" class="form-control" />
+        <small class="text-muted">PDF, DOCX, PPT (Max: 10MB)</small>
+    </div>
+
+        <div class="mb-3">
+        <label asp-for="PossiblePoints" class="form-label">Possible Points</label>
+        <input asp-for="PossiblePoints" type="number" min="1" class="form-control" />
+        <span asp-validation-for="PossiblePoints" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="PassMarks" class="form-label">Pass Marks</label>
+        <input asp-for="PassMarks" type="number" min="0" class="form-control" />
+        <span asp-validation-for="PassMarks" class="text-danger"></span>
+    </div>
+        <div class="mb-3">
+        <label asp-for="AssignedDate" class="form-label">Assigned Date</label>
+        <input asp-for="AssignedDate" type="date" class="form-control" />
+        <span asp-validation-for="AssignedDate" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DueDate" class="form-label">Due Date</label>
+        <input asp-for="DueDate" type="date" class="form-control" />
+        <span asp-validation-for="DueDate" class="text-danger"></span>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-tasks"></i> Give Assignment
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["Success"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: '@TempData["SuccessAssignment"]',
+                background: '#d4edda',
+                color: '#155724',
+                confirmButtonColor: '#28a745',
+                customClass: {
+                    popup: 'border border-success'
+                }
+            });
+        </script>
+    }
+}

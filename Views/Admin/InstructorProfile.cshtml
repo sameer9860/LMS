@@ -1,0 +1,68 @@
+@model Instructor
+
+@{
+    ViewBag.Title = "Instructor Profile";
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>@Model.FirstName @Model.MiddleName @Model.LastName</h3>
+        </div>
+        <div class="card-body row">
+            <div class="col-md-4 text-center">
+                @if (!string.IsNullOrEmpty(Model.ProfileImagePath))
+                {
+                    <img src="~/@Model.ProfileImagePath" class="img-thumbnail mb-3" style="max-width: 250px;" alt="Profile Image" />
+                }
+                else
+                {
+                    <img src="https://via.placeholder.com/250x250?text=No+Image" class="img-thumbnail mb-3" alt="No Image" />
+                }
+                <h5 class="mt-3">@Model.User?.Username</h5>
+                <span class="badge bg-secondary">Instructor</span>
+            </div>
+            <div class="col-md-8">
+                <table class="table table-bordered">
+                    <tr>
+                        <th>Email</th>
+                        <td>@Model.Email</td>
+                    </tr>
+                    <tr>
+                        <th>Phone Number</th>
+                        <td>@Model.PhoneNumber</td>
+                    </tr>
+                    <tr>
+                        <th>Gender</th>
+                        <td>@Model.Gender</td>
+                    </tr>
+                    
+                    <tr>
+                        <th>Date of Birth</th>
+                        <td>@Model.DateOfBirth.ToShortDateString()</td>
+                    </tr>
+                    <tr>
+                        <th>Qualification</th>
+                        <td>@Model.Qualification</td>
+                    </tr>
+                    <tr>
+                        <th>Expertise</th>
+                        <td>@Model.Expertise</td>
+                    </tr>
+                    <tr>
+                        <th>Years of Experience</th>
+                        <td>@Model.YearsOfExperience</td>
+                    </tr>
+                    <tr>
+                        <th>Bio</th>
+                        <td>@Model.Bio</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3">
+        <a asp-action="InstructorList" class="btn btn-secondary">Back to List</a>
+        <a asp-action="EditInstructor" asp-route-id="@Model.id" class="btn btn-primary">Edit Profile</a>
+    </div>
+</div>

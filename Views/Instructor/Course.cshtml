@@ -1,0 +1,77 @@
+@model IEnumerable<LMS.Models.Course>
+
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var course in Model)
+        {
+            <div class="col">
+                <a asp-action="CourseDetails" asp-route-id="@course.Id" class="text-decoration-none text-dark">
+                    <div class="card h-100 shadow-sm border-0 hover-shadow clickable-card">
+                        <img src="~/@(string.IsNullOrEmpty(course.ImagePath) ? "images/default-course.png" : course.ImagePath)"
+                             class="card-img-top" alt="@course.FullName" style="height:180px; object-fit:cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@course.FullName</h5>
+                            <p class="card-text text-muted" style="min-height:48px;">
+                                @(string.IsNullOrEmpty(course.Summary) 
+                                    ? "No summary provided." 
+                                    : (course.Summary.Length > 100 
+                                        ? course.Summary.Substring(0, 100) + "..." 
+                                        : course.Summary))
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .card-text {
+        font-size: 0.95rem;
+    }
+
+    .clickable-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .clickable-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .clickable-card img {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .clickable-card:hover img {
+        transform: scale(1.02);
+    }
+</style>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["SuccessCourse"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '@TempData["SuccessCourse"]',
+                background: '#d4edda',
+                color: '#155724',
+                confirmButtonColor: '#28a745',
+                iconColor: '#28a745'
+            });
+        </script>
+    }
+}

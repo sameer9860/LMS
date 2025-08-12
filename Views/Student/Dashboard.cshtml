@@ -1,0 +1,125 @@
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+    int myCoursesCount = ViewBag.MyCoursesCount ?? 0;
+}
+
+<div class="row g-4 mt-3">
+    <div class="col-md-4">
+        <a href="@Url.Action("MyCourses", "Student")" class="text-decoration-none text-dark">
+            <div class="card shadow border-0 text-center h-100" style="background-color: #e0f7fa;">
+                <div class="card-body">
+                    <i class="fas fa-book fa-2x mb-3 text-primary"></i>
+                    <h5 class="card-title">My Courses</h5>
+                    <p class="display-6 fw-bold">@myCoursesCount</p>
+                    <p class="text-muted">Total Enrolled Courses</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Full Width Calendar Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div id="calendarContainer" class="card shadow p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button id="prevBtn" class="btn btn-sm btn-outline-primary">&lt; Prev</button>
+                <h4 id="monthYear" class="mb-0 text-center flex-grow-1"></h4>
+                <button id="nextBtn" class="btn btn-sm btn-outline-primary">Next &gt;</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered text-center mb-0 w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendarBody">
+                        <!-- Calendar days will be injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    (function () {
+        const monthYear = document.getElementById('monthYear');
+        const calendarBody = document.getElementById('calendarBody');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        let today = new Date();
+        let currentMonth = today.getMonth();
+        let currentYear = today.getFullYear();
+
+        const months = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        function renderCalendar(month, year) {
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            calendarBody.innerHTML = "";
+            monthYear.innerText = `${months[month]} ${year}`;
+
+            let date = 1;
+            for (let i = 0; i < 6; i++) {
+                let row = document.createElement('tr');
+
+                for (let j = 0; j < 7; j++) {
+                    let cell = document.createElement('td');
+
+                    if (i === 0 && j < firstDay) {
+                        cell.innerHTML = "";
+                    } else if (date > daysInMonth) {
+                        cell.innerHTML = "";
+                    } else {
+                        cell.innerHTML = date;
+
+                        // Highlight today
+                        if (
+                            date === today.getDate() &&
+                            year === today.getFullYear() &&
+                            month === today.getMonth()
+                        ) {
+                            cell.classList.add('bg-primary', 'text-white');
+                            cell.style.borderRadius = "50%";
+                        }
+
+                        date++;
+                    }
+                    row.appendChild(cell);
+                }
+
+                calendarBody.appendChild(row);
+            }
+        }
+
+        prevBtn.addEventListener('click', function () {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar(currentMonth, currentYear);
+        });
+
+        nextBtn.addEventListener('click', function () {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar(currentMonth, currentYear);
+        });
+
+        renderCalendar(currentMonth, currentYear);
+    })();
+</script>
+}

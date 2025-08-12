@@ -1,0 +1,61 @@
+@model LMS.Models.AssignmentSubmission
+
+@{
+    ViewBag.Title = "Grade Submission";
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4>Grade Submission - @Model.Assignment?.Title</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Student:</strong> @Model.Student?.FirstName @Model.Student?.LastName</p>
+            <p><strong>Submitted At:</strong> @Model.SubmittedAt.ToString("g")</p>
+
+            @if (!string.IsNullOrEmpty(Model.FilePath))
+            {
+                <p><strong>Submitted File:</strong>
+                    <a href="~/@Model.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                        Download
+                    </a>
+                </p>
+            }
+
+            <form asp-action="GradeSubmission" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3">
+                    <label asp-for="MarksObtained" class="form-label">Marks Obtained</label>
+                    <input asp-for="MarksObtained" class="form-control" />
+                    <span asp-validation-for="MarksObtained" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="IsPassed" class="form-label">Status</label>
+                    <select asp-for="IsPassed" class="form-select">
+                        <option value="">-- Select --</option>
+                        <option value="true">Pass</option>
+                        <option value="false">Fail</option>
+                    </select>
+                    <span asp-validation-for="IsPassed" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Feedback" class="form-label">Feedback</label>
+                    <textarea asp-for="Feedback" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Feedback" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Submit Grade
+                </button>
+                <a asp-action="ViewSubmissions" asp-route-assignmentId="@Model.AssignmentId" class="btn btn-secondary ms-2">
+                    Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+</div>

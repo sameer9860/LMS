@@ -1,0 +1,148 @@
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+    DateTime today = DateTime.Now;
+}
+
+
+<!-- One row with three cards -->
+<div class="row mt-4">
+
+    <!-- Total Instructors -->
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3 shadow">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-chalkboard-teacher fa-3x me-3"></i>
+                <div>
+                    <h5 class="card-title mb-1">Total Instructors</h5>
+                    <p class="card-text display-6">@ViewBag.InstructorCount</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Students -->
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3 shadow">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-user-graduate fa-3x me-3"></i>
+                <div>
+                    <h5 class="card-title mb-1">Total Students</h5>
+                    <p class="card-text display-6">@ViewBag.StudentCount</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today -->
+    <div class="col-md-4">
+        <div class="card shadow border-0 text-center" style="background: #f0f4fa; height: 100%;">
+            <div class="card-body py-4 d-flex flex-column justify-content-center">
+                <i class="fas fa-calendar-alt fa-2x mb-3 text-primary"></i>
+                <h6 class="card-title mb-2" style="font-size: 1.5rem;">Today</h6>
+                <span class="fw-bold" style="font-size: 1.2rem; color: #2563eb;">@today.ToString("dddd, MMMM dd, yyyy")</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Second row: Calendar full width -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card bg-light mb-3 shadow">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fa fa-calendar-alt me-2 text-primary"></i>Calendar
+                </h5>
+
+                <div id="calendar-controls" class="d-flex justify-content-between align-items-center my-2">
+                    <button id="prevMonth" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <h6 id="calendarMonthYear" class="mb-0 fw-semibold"></h6>
+                    <button id="nextMonth" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <table class="table table-bordered text-center small mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th>
+                            <th>Thu</th><th>Fri</th><th>Sat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendarBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const calendarBody      = document.getElementById('calendarBody');
+        const calendarMonthYear = document.getElementById('calendarMonthYear');
+        const btnPrev           = document.getElementById('prevMonth');
+        const btnNext           = document.getElementById('nextMonth');
+
+        let currentDate = new Date();
+
+        function generateCalendar(date) {
+            const year          = date.getFullYear();
+            const month         = date.getMonth();
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const daysInMonth   = new Date(year, month + 1, 0).getDate();
+
+            calendarMonthYear.innerText =
+                date.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            calendarBody.innerHTML = '';
+            let dayCounter = 1;
+
+            for (let row = 0; row < 6; row++) {
+                const tr = document.createElement('tr');
+
+                for (let col = 0; col < 7; col++) {
+                    const td = document.createElement('td');
+
+                    if (row === 0 && col < firstDayIndex) {
+                        td.innerHTML = '&nbsp;';
+                    } else if (dayCounter > daysInMonth) {
+                        td.innerHTML = '&nbsp;';
+                    } else {
+                        td.textContent = dayCounter;
+
+                        const today = new Date();
+                        if (
+                            dayCounter === today.getDate() &&
+                            month      === today.getMonth() &&
+                            year       === today.getFullYear()
+                        ) {
+                            td.classList.add('bg-primary', 'text-white', 'rounded-circle');
+                        }
+
+                        dayCounter++;
+                    }
+                    tr.appendChild(td);
+                }
+
+                calendarBody.appendChild(tr);
+
+                if (dayCounter > daysInMonth) break;
+            }
+        }
+
+        btnPrev.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateCalendar(currentDate);
+        });
+
+        btnNext.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateCalendar(currentDate);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => generateCalendar(currentDate));
+    </script>
+}

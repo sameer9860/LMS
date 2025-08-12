@@ -1,0 +1,61 @@
+@model List<AssignmentSubmission>
+
+@{
+    ViewBag.Title = "Submissions";
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<h4>Student Submissions</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>S.N.</th>
+            <th>Student</th>
+            <th>Submitted At</th>
+            <th>File</th>
+            <th>Marks</th>
+            <th>Status</th>
+            <th>Action</th> <!-- Grade Button -->
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var submission in Model)
+        {
+            <tr>
+                <td>@(Model.IndexOf(submission) + 1) </td>
+                <td>@submission.Student?.FirstName @submission.Student?.LastName</td>
+                <td>@submission.SubmittedAt.ToShortDateString()</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(submission.FilePath))
+                    {
+                        <a href="~/@submission.FilePath" target="_blank">Download</a>
+                    }
+                </td>
+                <td>@(submission.MarksObtained?.ToString() ?? "-")</td>
+                <td>@(submission.IsPassed.HasValue ? (submission.IsPassed.Value ? "Pass" : "Fail") : "-")</td>
+                <td>
+                    <a asp-action="GradeSubmission" asp-route-id="@submission.Id" class="btn btn-sm btn-primary">
+                        <i class="bi bi-pencil"></i> Grade
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["SuccessGrade"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: '@TempData["SuccessGrade"]',
+                background: '#d4edda',
+                color: '#155724',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    }
+}

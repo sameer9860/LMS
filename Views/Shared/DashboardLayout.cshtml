@@ -1,0 +1,578 @@
+@{
+    Layout = null;
+    ViewBag.Title = "Dashboard";
+
+    var isAdmin = User?.IsInRole("Admin") == true;
+    var isInstructor = User?.IsInRole("Instructor") == true;
+    var isStudent = User?.IsInRole("Student") == true;
+    var userName = User?.Identity?.Name ?? "User";
+}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewBag.Title - LMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f6f8fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #263544;
+            color: #fff;
+            height: 100vh;
+            padding-top: 20px;
+            transition: all 0.3s ease;
+            position: fixed;
+            z-index: 1040;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .sidebar .user-panel {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .sidebar .user-panel img {
+            width: 48px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .sidebar .user-panel small {
+            color: #b0bec5;
+        }
+
+        .sidebar .nav-link {
+            color: #cfd8dc;
+            padding: 10px 24px;
+            border-radius: 6px;
+            margin: 2px 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: #0d6efd;
+            color: #fff;
+        }
+
+        .sidebar.collapsed .nav-link span {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-panel small,
+        .sidebar.collapsed .user-panel div {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-panel img {
+            margin-bottom: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            min-height: 100vh;
+            transition: margin-left 0.3s;
+            margin-left: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content.collapsed {
+            margin-left: 70px;
+        }
+
+        .topbar {
+            height: 64px;
+            background: #fff;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e3e6ea;
+            box-shadow: 0 2px 8px rgba(38, 53, 68, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .icon-btn {
+            color: #263544;
+            font-size: 1.35rem;
+            position: relative;
+            padding: 6px 10px;
+            border-radius: 50%;
+            transition: background 0.2s, color 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: #f0f4f8;
+            color: #007bff;
+        }
+
+        .icon-btn .badge {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+            pointer-events: none;
+        }
+
+        .topbar .user-dropdown img {
+            width: 38px;
+            border-radius: 50%;
+        }
+
+        .topbar .user-dropdown .dropdown-toggle {
+            color: #263544;
+            font-weight: 500;
+        }
+
+        .dropdown-menu {
+            right: 0;
+            left: auto;
+            min-width: 180px;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: #263544;
+            font-size: 1.5rem;
+            margin-right: 16px;
+        }
+
+        .sidebar-toggle:focus {
+            outline: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.25);
+            z-index: 1039;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        @@media (max-width: 1199.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 1050;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+
+            .main-content.collapsed {
+                margin-left: 0;
+            }
+
+            .sidebar-overlay {
+                display: block;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .topbar {
+                flex-direction: row;
+                height: 56px;
+                padding: 0 12px;
+            }
+
+            .topbar-left,
+            .topbar-right {
+                gap: 0.5rem;
+            }
+
+            .sidebar {
+                width: 200px;
+            }
+
+            .content-area {
+                padding: 15px;
+            }
+
+            .dropdown-menu .dropdown-item {
+                transition: background 0.18s, color 0.18s;
+                border-radius: 6px;
+                margin: 2px 4px;
+                padding: 8px 16px;
+            }
+
+            .dropdown-menu .dropdown-item:hover,
+            .dropdown-menu .dropdown-item:focus {
+                background: #f0f4f8;
+                color: #0008ff;
+            }
+
+            .dropdown-menu .dropdown-item.text-danger:hover,
+            .dropdown-menu .dropdown-item.text-danger:focus {
+                background: #ffeaea;
+                color: #dc3545;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        <div class="sidebar" id="sidebar">
+            <div class="text-center fs-4 fw-bold mb-3">
+                <span class="d-inline-block">LMS</span>
+            </div>
+            <div class="user-panel mb-3">
+                <img src="~/Images/admin.png" alt="User Avatar" />
+                <div class="mt-2"><small>
+                        @(isAdmin ? "Administrator" : isInstructor ? "Instructor" : isStudent ? "Student" : "User")
+                    </small></div>
+            </div>
+            <ul class="nav flex-column">
+                @if (isAdmin)
+                {
+                    <li><a href="@Url.Action("Dashboard", "Admin")" class="nav-link"><i class="fas fa-th-large"></i>
+                            <span>Dashboard</span></a></li>
+                    <li><a href="@Url.Action("CreateInstructor", "Admin")" class="nav-link"><i
+                                class="fas fa-chalkboard-teacher"></i> <span>Create Instructor</span></a></li>
+                    <li><a href="@Url.Action("InstructorList", "Admin")" class="nav-link"><i class="fas fa-user-graduate"></i>
+                            <span>Instructor List</span></a></li>
+                }
+                else if (isInstructor)
+                {
+                    <li><a href="@Url.Action("Dashboard", "Instructor")" class="nav-link"><i class="fas fa-th-large"></i>
+                            <span>Dashboard</span></a></li>
+                    <!-- Students collapsible menu -->
+                    <li>
+                        <a class="nav-link" data-bs-toggle="collapse" href="#studentsMenu" role="button" aria-expanded="false"
+                            aria-controls="studentsMenu">
+                            <i class="fas fa-users"></i> <span>Students</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </a>
+                        <div class="collapse" id="studentsMenu">
+                            <ul class="nav flex-column ms-3">
+                                <li><a href="@Url.Action("EnrollStudents", "Instructor")" class="nav-link"><i
+                                            class="fas fa-user-plus"></i> <span>Add Students</span></a></li>
+                                <li><a href="@Url.Action("StudentList", "Instructor")" class="nav-link"><i
+                                            class="fas fa-list"></i> <span>Student List</span></a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <!-- Courses collapsible menu -->
+                    <li>
+                        <a class="nav-link" data-bs-toggle="collapse" href="#coursesMenu" role="button" aria-expanded="false"
+                            aria-controls="coursesMenu">
+                            <i class="fas fa-book"></i> <span>Courses</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </a>
+                        <div class="collapse" id="coursesMenu">
+                            <ul class="nav flex-column ms-3">
+                                <li>
+                                    <a href="@Url.Action("CreateCourse", "Instructor")" class="nav-link">
+                                        <i class="fas fa-plus"></i> <span>Create Course</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="@Url.Action("Course", "Instructor")" class="nav-link">
+                                        <i class="fas fa-list"></i> <span>My Courses</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                }
+                else if (isStudent)
+                {
+                    <li><a href="@Url.Action("Dashboard", "Student")" class="nav-link"><i class="fas fa-th-large"></i>
+                            <span>Dashboard</span></a></li>
+                    <li><a href="@Url.Action("MyCourses", "Student")" class="nav-link"><i class="fas fa-book"></i> <span>My
+                                Courses</span></a></li>
+                    <li><a href="@Url.Action("MySubmissions", "Student")" class="nav-link"><i class="fas fa-list"></i> <span>My
+                                Results/Grades </span></a></li>
+                }
+            </ul>
+        </div>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <div class="main-content" id="mainContent">
+            <div class="topbar d-flex align-items-center justify-content-between">
+                <div class="topbar-left d-flex align-items-center">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="fw-semibold fs-5 ms-2">Welcome, @userName</div>
+                </div>
+
+                <div class="topbar-right d-flex align-items-center gap-3">
+                    <a href="#" class="icon-btn position-relative" title="Messages">
+                        <i class="fas fa-envelope"></i>
+                        <span
+                            class="badge rounded-pill bg-primary position-absolute top-0 start-100 translate-middle">5</span>
+                    </a>
+
+                    <!-- Notification dropdown toggle button -->
+                      <a class="nav-link position-relative" href="#" id="notificationIcon" role="button"
+       data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell-fill fs-4"></i> <!-- Enlarged icon -->
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display:none;">
+            0
+        </span>
+    </a>
+
+                    <!-- Dropdown menu -->
+                    <ul class="dropdown-menu dropdown-menu-end p-0"
+                        style="width: 320px; max-height: 400px; overflow-y: auto;" id="notificationDropdown">
+
+                        <div class="px-3 py-2 d-flex justify-content-between border-bottom">
+                            <h6 class="mb-0">Notifications</h6>
+                            <small><a href="#" id="markAllRead">Mark all as read</a></small>
+                        </div>
+
+                        <div id="notificationList" class="p-2">
+                            <!-- Notifications will be inserted here -->
+                            <div class="text-center text-muted py-2" id="noNotifications" style="display: none;">
+                                No notifications found.
+                            </div>
+                        </div>
+
+                        <div class="px-3 py-2 border-top text-center" id="viewAllContainer" style="display: none;">
+                            <a href="/Notification/Index">View All</a>
+                        </div>
+                    </ul>
+
+
+
+                    <div class="dropdown user-dropdown ms-2">
+                        <a class="dropdown-toggle d-flex align-items-center text-dark text-decoration-none" href="#"
+                            id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="~/Images/admin.png" class="rounded-circle me-2" />
+                            @userName
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="@Url.Action("Profile", "Account")"><i
+                                        class="fas fa-user me-2"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("Settings", "Account")"><i
+                                        class="fas fa-cog me-2"></i> Settings</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("Support", "Account")"><i
+                                        class="fas fa-headset me-2"></i> Support</a></li>
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="@Url.Action("Logout", "Account")"><i
+                                        class="fas fa-power-off me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 content-area">
+                @RenderBody()
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container mt-5">
+            @RenderBody()
+        </div>
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @* <script src="~/js/site.js"></script> *@
+    <script>
+        // Sidebar toggle for all screen sizes
+        let sidebarCollapsed = false;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isSmall = window.innerWidth < 1200;
+
+            if (isSmall) {
+                sidebar.classList.toggle('show');
+                overlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none';
+            } else {
+                sidebarCollapsed = !sidebarCollapsed;
+                sidebar.classList.toggle('collapsed', sidebarCollapsed);
+                mainContent.classList.toggle('collapsed', sidebarCollapsed);
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('show');
+            overlay.style.display = 'none';
+        }
+
+        // Prevent collapsible menu clicks from closing sidebar
+        document.querySelectorAll('.sidebar [data-bs-toggle="collapse"]').forEach(toggle => {
+            toggle.addEventListener('click', function (e) {
+                e.stopPropagation(); // Prevent event from bubbling up
+            });
+        });
+
+        // Close sidebar only when clicking actual nav links (not toggles)
+        document.querySelectorAll('.sidebar .nav-link:not([data-bs-toggle="collapse"])').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth < 1200) closeSidebar();
+            });
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function (event) {
+            const sidebar = document.getElementById('sidebar');
+            const isSmall = window.innerWidth < 1200;
+
+            if (isSmall && sidebar.classList.contains('show')) {
+                if (!sidebar.contains(event.target) && !event.target.closest('.sidebar-toggle')) {
+                    closeSidebar();
+                }
+            }
+        });
+
+        // Responsive behavior
+        window.addEventListener('resize', function () {
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth >= 1200) {
+                sidebar.classList.remove('show');
+                document.getElementById('sidebarOverlay').style.display = 'none';
+            }
+        });
+
+        // Notification loading and management
+        document.addEventListener('DOMContentLoaded', function () {
+            loadNotifications();
+        });
+
+       function loadNotifications() {
+    fetch('/Notification/GetUserNotifications')
+        .then(response => response.json())
+        .then(data => {
+            const list = document.getElementById('notificationList');
+            const badge = document.getElementById('notificationBadge');
+            const viewAll = document.getElementById('viewAllContainer');
+
+            list.innerHTML = '';
+
+            if (data.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted">No notifications</div>';
+                badge.style.display = 'none';
+                viewAll.style.display = 'none';
+                return;
+            }
+
+            let unreadCount = 0;
+
+            data.forEach(n => {
+                if (!n.isRead) unreadCount++;
+
+                const item = document.createElement('a');
+                item.href = n.actionUrl || '#';
+                item.className = 'dropdown-item d-flex align-items-start gap-2 border-bottom py-2';
+                item.innerHTML = `
+                    <i class="${n.iconClass || 'bi bi-bell'} text-primary fs-5"></i>
+                    <div>
+                        <strong>${n.title}</strong><br />
+                        <small class="text-muted">${n.message}</small><br />
+                        <small class="text-muted">${new Date(n.createdAt).toLocaleString()}</small>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            // Show or hide badge
+            if (unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            // Show view all if more than 5
+            viewAll.style.display = data.length > 5 ? 'block' : 'none';
+        });
+}
+
+document.getElementById('markAllRead').addEventListener('click', function (e) {
+    e.preventDefault();
+    fetch('/Notification/MarkAllAsRead', { method: 'POST' })
+        .then(() => {
+            loadNotifications();
+        });
+});
+
+// Initial load
+loadNotifications();
+
+// Refresh every 30 seconds
+
+
+  
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+
+</html>

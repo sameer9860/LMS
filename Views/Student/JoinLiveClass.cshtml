@@ -1,0 +1,18 @@
+@model LMS.Models.LiveClass
+@{
+    ViewBag.Title = "Join Live Class";
+    string roomName = Model.RoomName;
+}
+
+<h3>@Model.Title</h3>
+<p><strong>Starts:</strong> @Model.StartTime.ToString("f")</p>
+<p><strong>Ends:</strong> @Model.EndTime.ToString("f")</p>
+
+<div style="height: 600px;">
+    <iframe
+        src="https://meet.jit.si/@roomName"
+        allow="camera; microphone; fullscreen; display-capture"
+        style="height:100%; width:100%; border:0;"
+        allowfullscreen>
+    </iframe>
+</div>

@@ -1,0 +1,50 @@
+@model List<LMS.Models.AssignmentSubmission>
+
+@{
+    ViewBag.Title = "My Submissions";
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2>My Assignment Submissions and Results</h2>
+    <table class="table table-bordered">
+        <thead class="table-secondary">
+            <tr>
+                <th>S.N</th>
+                <th>Assignment</th>
+                <th>Submitted File</th>
+                <th>Marks</th>
+                <th>Feedback</th>
+                <th>Remarks</th> @* ✅ New column *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var submission in Model)
+            {
+                <tr>
+                    <td>@(Model.IndexOf(submission) + 1)</td>
+                    <td>@submission.Assignment?.Title</td>
+                    <td>
+                        <a href="~/@submission.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
+                    <td>@(submission.MarksObtained.HasValue ? submission.MarksObtained.ToString() : "Pending")</td>
+                    <td>@(string.IsNullOrEmpty(submission.Feedback) ? "-" : submission.Feedback)</td>
+                    <td>
+                        @if (!submission.MarksObtained.HasValue)
+                        {
+                            <span class="text-muted">Pending</span>
+                        }
+                        else if (submission.IsPassed == true)
+                        {
+                            <span class="badge bg-success">Passed</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Failed</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

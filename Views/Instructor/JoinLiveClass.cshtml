@@ -1,0 +1,28 @@
+@model LMS.Models.LiveClass
+
+@{
+    ViewData["Title"] = "Join Live Class - " + Model.Title;
+}
+
+// Basic info
+<h3>@Model.Title</h3>
+<p>@Model.Description</p>
+<p>Scheduled: @Model.StartTime.ToString("MMM dd, yyyy hh:mm tt") - @Model.EndTime.ToString("MMM dd, yyyy hh:mm tt")</p>
+
+@if (DateTime.Now < Model.EndTime)
+{
+    <div style="height: 600px;">
+        <iframe 
+            src="https://meet.jit.si/@Model.RoomName" 
+            allow="camera; microphone; fullscreen; display-capture" 
+            style="width:100%; height:100%; border:none;"
+            allowfullscreen>
+        </iframe>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        This live class has ended.
+    </div>
+}

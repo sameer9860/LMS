@@ -1,0 +1,158 @@
+@model List<Instructor>
+
+@{
+    ViewBag.Title = "Instructor List";
+    int sn = 1;
+}
+
+<h2>Instructor List</h2>
+
+<table class="table table-bordered table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>S.N.</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Phone Number</th>
+            <th>Qualification</th>
+            <th style="width: 140px;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var instructor in Model)
+        {
+            <tr>
+                <td>@sn</td>
+                <td>
+                    @instructor.FirstName
+                    @(string.IsNullOrWhiteSpace(instructor.MiddleName) ? "" : instructor.MiddleName + " ")
+                    @instructor.LastName
+                </td>
+                <td>@instructor.Email</td>
+                <td>@instructor.PhoneNumber</td>
+                <td>@instructor.Qualification</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a asp-action="EditInstructor" asp-route-id="@instructor.id" class="btn btn-sm btn-outline-primary"
+                            title="Edit">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal"
+                            data-bs-target="#deleteConfirmModal" data-id="@instructor.id"
+                            data-username="@instructor.User?.Username">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                        <a asp-action="InstructorProfile" asp-route-id="@instructor.id"
+                            class="btn btn-sm btn-outline-secondary" title="View Profile">
+                            <i class="bi bi-person-circle"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            sn++;
+        }
+    </tbody>
+</table>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete instructor: <strong id="instructorUsername"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // SweetAlert Success Message
+        @if (TempData["Success"] != null)
+            {
+                <text>
+                    Swal.fire({
+                        icon: 'success',
+                    title: 'Success',
+                     text: '@TempData["Success"]',
+                    background: '#d4edda', // green background
+                    color: '#155724',       // green text
+                    confirmButtonColor: '#28a745', // Bootstrap success green
+                    customClass: {
+                        popup: 'border border-success'
+                                            }
+                                        });
+
+                </text>
+        }
+
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <text>
+                    Swal.fire({
+                        icon: 'success',
+                    title: 'Success',
+                     text: '@TempData["SuccessMessage"]',
+                    background: '#d4edda', // green background
+                    color: '#155724',       // green text
+                    confirmButtonColor: '#28a745', // Bootstrap success green
+                    customClass: {
+                        popup: 'border border-success'
+                                            }
+                                        });
+
+                </text>
+        }
+
+            // SweetAlert Error Message
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <text>
+                    Swal.fire({
+                        icon: 'Delete',
+                    title: 'Delete',
+                    text: 'Deleted Successfully',
+                    background: '#f8d7da', // red background
+                    color: '#721c24',       // red text
+                    confirmButtonColor: '#dc3545', // Bootstrap danger red
+                    customClass: {
+                        popup: 'border border-danger'
+                                            }
+                                        });
+
+                </text>
+        }
+
+                            // Populate Delete Modal
+                            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        deleteConfirmModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const instructorId = button.getAttribute('data-id');
+            const username = button.getAttribute('data-username');
+
+            const deleteForm = document.getElementById('deleteForm');
+            const usernameSpan = document.getElementById('instructorUsername');
+
+            deleteForm.action = '/Admin/DeleteInstructor/' + instructorId;
+            usernameSpan.textContent = username;
+        });
+    </script>
+}

@@ -1,0 +1,15 @@
+@* @model IEnumerable<LMS.Models.Notification>
+
+@foreach (var n in Model)
+{
+    <a href="@n.ActionUrl" class="dropdown-item px-3 py-2 border-bottom @(n.IsRead ? "" : "fw-bold")">
+        <div class="d-flex align-items-start">
+            <i class="@n.IconClass me-2"></i>
+            <div>
+                <div>@n.Title</div>
+                <small class="text-muted">@n.Message</small><br />
+                <small class="text-muted">@n.CreatedAt.ToLocalTime().ToString("g")</small>
+            </div>
+        </div>
+    </a>
+} *@

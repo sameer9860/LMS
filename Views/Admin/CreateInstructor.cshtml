@@ -1,0 +1,242 @@
+@model InstructorViewModel
+
+@{
+    ViewBag.Title = "Add Instructor";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+<h2 class="mb-4">Add Instructor</h2>
+
+<!-- Progress Bar -->
+<div class="progress mb-4">
+    <div id="progressBar" class="progress-bar" role="progressbar" style="width: 33%;">
+        Step 1 of 3
+    </div>
+</div>
+
+<form asp-action="CreateInstructor" method="post" enctype="multipart/form-data" id="instructorForm">
+    <!-- SECTION 1: Personal Information -->
+    <div id="section1">
+        <h4>Step 1: Personal Information</h4>
+
+        <div class="form-group">
+            <label asp-for="FirstName"></label>
+            <input asp-for="FirstName" class="form-control" required />
+            <span asp-validation-for="FirstName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="MiddleName"></label>
+            <input asp-for="MiddleName" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="LastName"></label>
+            <input asp-for="LastName" class="form-control" required />
+            <span asp-validation-for="LastName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Email"></label>
+            <input asp-for="Email" class="form-control" required />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="PhoneNumber"></label>
+            <input asp-for="PhoneNumber" class="form-control" required />
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Gender"></label>
+            <select asp-for="Gender" class="form-control" required>
+                <option value="">-- Select Gender --</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+            </select>
+            <span asp-validation-for="Gender" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DateOfBirth"></label>
+            <input asp-for="DateOfBirth" type="date" class="form-control" required />
+            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+        </div>
+
+        <button type="button" class="btn btn-primary mt-3" onclick="validateSection('section1', 'section2', 2)">Next</button>
+    </div>
+
+    <!-- SECTION 2: Account Info -->
+    <div id="section2" style="display:none;">
+        <h4>Step 2: Account and Qualification</h4>
+
+        <div class="form-group">
+            <label asp-for="Username"></label>
+            <input asp-for="Username" class="form-control" required />
+            <span asp-validation-for="Username" class="text-danger"></span>
+        </div>
+
+        <div class="form-group password-group">
+            <label asp-for="Password"></label>
+            <div class="input-group">
+                <input asp-for="Password" class="form-control" type="password" id="Password" required />
+                <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1" onclick="togglePassword('Password', this)">
+                    <i class="fa fa-eye-slash"></i>
+                </button>
+            </div>
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-group password-group">
+            <label asp-for="ConfirmPassword"></label>
+            <div class="input-group">
+                <input asp-for="ConfirmPassword" class="form-control" type="password" id="ConfirmPassword" required />
+                <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1" onclick="togglePassword('ConfirmPassword', this)">
+                    <i class="fa fa-eye-slash"></i>
+                </button>
+            </div>
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Qualification"></label>
+            <input asp-for="Qualification" class="form-control" required />
+            <span asp-validation-for="Qualification" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Expertise"></label>
+            <input asp-for="Expertise" class="form-control" required />
+            <span asp-validation-for="Expertise" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="YearsOfExperience"></label>
+            <input asp-for="YearsOfExperience" class="form-control" type="number" />
+            <span asp-validation-for="YearsOfExperience" class="text-danger"></span>
+        </div>
+
+        <button type="button" class="btn btn-secondary mt-3" onclick="showSection('section1', 1)">Previous</button>
+        <button type="button" class="btn btn-primary mt-3 ms-2" onclick="validateSection('section2', 'section3', 3)">Next</button>
+    </div>
+
+    <!-- SECTION 3: Bio and Photo -->
+    <div id="section3" style="display:none;">
+        <h4>Step 3: Additional Info</h4>
+
+        <div class="form-group">
+            <label asp-for="Bio"></label>
+            <textarea asp-for="Bio" class="form-control"></textarea>
+            <span asp-validation-for="Bio" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ProfileImage"></label>
+            <input asp-for="ProfileImage" class="form-control" type="file" accept=".jpg,.png" />
+            <span asp-validation-for="ProfileImage" class="text-danger"></span>
+        </div>
+
+        <button type="button" class="btn btn-secondary mt-3" onclick="showSection('section2', 2)">Previous</button>
+        <button type="submit" class="btn btn-success mt-3 ms-2">Create Instructor</button>
+    </div>
+</form>
+
+@section Scripts {
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            }
+        }
+
+        function validateSection(currentId, nextId, progressStep) {
+            const inputs = document.querySelectorAll(`#${currentId} input, #${currentId} select, #${currentId} textarea`);
+            let valid = true;
+
+            inputs.forEach(input => {
+                if (!input.checkValidity()) {
+                    input.reportValidity();
+                    valid = false;
+                }
+            });
+
+            if (valid) {
+                showSection(nextId, progressStep);
+            }
+        }
+
+        function showSection(sectionId, stepNumber) {
+            // Hide all sections
+            document.getElementById("section1").style.display = "none";
+            document.getElementById("section2").style.display = "none";
+            document.getElementById("section3").style.display = "none";
+
+            // Show selected section
+            document.getElementById(sectionId).style.display = "block";
+
+            // Update progress bar
+            const progressBar = document.getElementById("progressBar");
+            const percent = stepNumber * 33;
+            progressBar.style.width = percent + "%";
+            progressBar.textContent = "Step " + stepNumber + " of 3";
+        }
+
+        // Show SweetAlert popup if SuccessMessage is set
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            </text>
+        }
+    </script>
+
+    <style>
+        .password-group .input-group {
+            position: relative;
+        }
+        .password-toggle {
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            font-size: 1.2rem;
+            padding: 0 12px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .password-toggle:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        .password-toggle:hover {
+            color: #007bff;
+        }
+        .input-group .form-control {
+            border-right: 0;
+        }
+        .input-group .password-toggle {
+            border-left: 0;
+        }
+    </style>
+
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
