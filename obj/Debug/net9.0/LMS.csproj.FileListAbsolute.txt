@@ -168,3 +168,4 @@ D:\OneDrive\Documents\LMS\LMS\obj\Debug\net9.0\refint\LMS.dll
 D:\OneDrive\Documents\LMS\LMS\obj\Debug\net9.0\LMS.pdb
 D:\OneDrive\Documents\LMS\LMS\obj\Debug\net9.0\LMS.genruntimeconfig.cache
 D:\OneDrive\Documents\LMS\LMS\obj\Debug\net9.0\ref\LMS.dll
+D:\OneDrive\Documents\LMS\LMS\obj\Debug\net9.0\LMS.sourcelink.json
