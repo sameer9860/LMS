@@ -46,9 +46,13 @@ namespace LMS.Models
 
         public virtual ICollection<Material>? Materials { get; set; }
         public virtual ICollection<Assignment>? Assignments { get; set; }
+            public virtual ICollection<Quiz>? Quizzes { get; set; } // New
+
         public virtual ICollection<Enrollment>? Enrollments { get; set; }
 
         public virtual ICollection<LiveClass>? LiveClasses { get; set; }
+
+        public virtual ICollection<ChatMessage>? ChatMessages{ get; set; }
 
            
 

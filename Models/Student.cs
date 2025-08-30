@@ -32,5 +32,7 @@ namespace LMS.Models
 
         public ICollection<Enrollment>? Enrollments { get; set; }
 
+        
+
     }
 }

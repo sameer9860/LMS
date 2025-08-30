@@ -4,12 +4,14 @@
 @{
     Layout = "~/Views/Shared/DashboardLayout.cshtml";
     var instructorStudents = ViewBag.StudentsByInstructor as List<LMS.Models.Student>;
+    var chatMessages = ViewBag.ChatMessages as List<LMS.Models.ChatMessage> ?? new List<LMS.Models.ChatMessage>();
+
   
 
         
 }
 
-<div class="container mt-4">
+<div class="container mt-2">
     <!-- ✅ Breadcrumb with icons -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb bg-light px-3 py-2 rounded shadow-sm align-items-center">
@@ -44,9 +46,14 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button"
                 role="tab">
-                <i class="fas fa-upload"></i> Materials
+                <span class="badge bg-info"></span><i class="fas fa-upload"></i> Materials
             </button>
         </li>
+        <li class="nav-item" role="presentation"></li>
+    <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
+      <i class="fas fa-comments me-1"></i>Chat</span>
+    </button>
+</li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments"
                 type="button" role="tab">
@@ -80,8 +87,10 @@
     </ul>
 
     <div class="tab-content" id="courseTabContent">
+
+
         @* Course Info *@
-        <div class="tab-pane fade" id="course" role="tabpanel">
+<div class="tab-pane fade" id="course" role="tabpanel">
             <div class="card shadow-sm mb-3">
                 <img src="~/@(string.IsNullOrEmpty(Model.Course?.ImagePath) ? "images/default-course.png" : Model.Course.ImagePath)"
                     class="card-img-top" style="height:220px; object-fit:cover;" />
@@ -95,10 +104,10 @@
                     <p><strong>Summary:</strong> @Model.Course?.Summary</p>
                 </div>
             </div>
-        </div>
+</div>
         
         @* Participants *@
-        <div class="tab-pane fade" id="participants" role="tabpanel">
+<div class="tab-pane fade" id="participants" role="tabpanel">
             <h5>Enroll a Student</h5>
             <form asp-action="EnrollStudentToCourse" method="post" class="row g-2 mb-3">
                 <input type="hidden" name="courseId" value="@Model.Id" />
@@ -146,7 +155,7 @@
                                         <td>@student?.GuardianName</td>
                                         <td>@student?.Grade</td>
                                         <td>
-                                            <a asp-controller="Student" asp-action="Edit" asp-route-id="@student.Id"
+                                            <a asp-controller="Student" asp-action="Edit" asp-route-id="@student!.Id"
                                                 class="btn btn-sm btn-outline-primary" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -171,10 +180,10 @@
             {
                 <div class="alert alert-info">No students enrolled yet.</div>
             }
-        </div>
+</div>
 
         @* Materials *@
-        <div class="tab-pane fade" id="materials" role="tabpanel">
+<div class="tab-pane fade" id="materials" role="tabpanel">
             <h5 class="mb-3">Course Materials</h5>
 
             @* Filter out assignment materials - only show materials not linked to assignments *@
@@ -268,47 +277,109 @@
                     </form>
                 </div>
             </div>
-        </div>
+</div>
 
         @* Assignments *@
-        <div class="tab-pane fade" id="assignments" role="tabpanel">
-            <h5>Assignments</h5>
-            @if (Model.Assignments != null && Model.Assignments.Any())
+<div class="tab-pane fade" id="assignments" role="tabpanel">
+    <h5>Assignments</h5>
+    @if (Model.Assignments != null && Model.Assignments.Any())
+    {
+        <ul class="list-group mb-3">
+            @foreach (var assignment in Model.Assignments)
             {
-                <ul class="list-group mb-3">
-                    @foreach (var assignment in Model.Assignments)
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>@assignment.Title</strong>
-                                <div class="small text-muted">@assignment.Description</div>
-                                <div class="small">Due: @assignment.DueDate.ToShortDateString()</div>
-                            </div>
-                            <a asp-action="ViewSubmissions" asp-route-assignmentId="@assignment.Id"
-                                class="btn btn-primary btn-sm">
-                                <i class="fas fa-file-alt"></i> View Submissions
-                            </a>
-                        </li>
-                    }
-                </ul>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>@assignment.Title</strong>
+                        <div class="small text-muted">@assignment.Description</div>
+                        <div class="small">Due: @assignment.DueDate.ToShortDateString()</div>
+                    </div>
+                    <a asp-action="ViewSubmissions" asp-route-assignmentId="@assignment.Id"
+                       class="btn btn-primary btn-sm">
+                        <i class="fas fa-file-alt"></i> View Submissions
+                    </a>
+                </li>
             }
-            else
+        </ul>
+    }
+    else
+    {
+        <div class="alert alert-info">No assignments given yet.</div>
+    }
+
+    <div class="d-flex gap-2 mb-4">
+        <a asp-action="GiveAssignment" asp-route-courseId="@Model.Id" class="btn btn-warning btn-sm">
+            <i class="fas fa-tasks"></i> Give Assignment
+        </a>
+    </div>
+
+    <h5>Quizzes</h5>
+    @if (Model.Quizzes != null && Model.Quizzes.Any())
+    {
+        <ul class="list-group mb-3">
+            @foreach (var quiz in Model.Quizzes)
             {
-                <div class="alert alert-info">No assignments given yet.</div>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>@quiz.Title</strong>
+                        <div class="small text-muted">@quiz.Description</div>
+                        <div class="small">Due: @quiz.DueDate.ToShortDateString()</div>
+                        <div class="badge bg-@(quiz.IsAutoGenerated ? "success" : "info")">
+                            @(quiz.IsAutoGenerated ? "AI Generated" : "Manual")
+                        </div>
+                    </div>
+                    <a asp-action="ViewQuiz" asp-route-quizId="@quiz.Id"
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-question-circle"></i> View Quiz
+                    </a>
+                </li>
             }
-            <div class="d-flex gap-2">
-                <a asp-action="GiveAssignment" asp-route-courseId="@Model.Id" class="btn btn-warning btn-sm">
-                    <i class="fas fa-tasks"></i> Give Assignment
-                </a>
-                <button class="btn btn-outline-secondary btn-sm" disabled>
-                    <i class="fas fa-question-circle"></i> Give Quiz (Coming Soon)
-                </button>
-            </div>
+        </ul>
+    }
+    else
+    {
+        <div class="alert alert-info">No quizzes created yet.</div>
+    }
+
+    <div class="d-flex gap-2">
+        <a asp-action="AutoQuiz" asp-route-courseId="@Model.Id" class="btn btn-outline-success btn-sm">
+            <i class="fas fa-magic"></i> Auto Quiz (AI)
+        </a>
+        <a asp-action="ManualQuiz" asp-route-courseId="@Model.Id" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit"></i> Manual Quiz
+        </a>
+    </div>
+</div>
+
+
+
+@* chat tab *@
+<div class="tab-pane fade" id="chat" role="tabpanel">
+    <div class="card">
+        <div class="card-header bg-info text-dark">
+            <i class="fas fa-comments"></i> Course Chat
         </div>
 
+        <div class="card-body" style="height:400px; overflow-y:auto; background:#f9f9f9;" id="chatWindow">
+            @foreach (var msg in chatMessages)
+            {
+                var isSender = msg.User!.Username == User.Identity!.Name;
+                <div class="message @(isSender ? "sender" : "receiver")">
+                    <b>@msg.User.Username</b>: @msg.Message
+                    <span class="text-muted">(@msg.SentAt.ToShortTimeString())</span>
+                </div>
+            }
+        </div>
 
-    @* live Classes tab *@
-<!-- Live Classes Tab Button (already in your nav-pills) -->
+        <div class="card-footer d-flex">
+            <input type="text" id="chatInput" class="form-control" placeholder="Type a message..." />
+            <button class="btn btn-primary ms-2" id="sendButton">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+   
 
 
 <!-- Live Classes Tab Content -->
@@ -442,9 +513,18 @@
                                             <i class="fas fa-door-open me-1"></i>Join
                                         </a>
                                     }
-                                    <a asp-action="DeleteLiveClass" asp-route-id="@live.Id" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this class?');">
-                                        <i class="fas fa-trash-alt me-1"></i>Delete
-                                    </a>
+                                    <form asp-action="DeleteLiveClass"
+      asp-route-id="@live.Id"
+      method="post"
+      style="display:inline;">
+    @Html.AntiForgeryToken()
+    <button type="submit"
+            class="btn btn-sm btn-danger"
+            onclick="return confirm('Are you sure you want to delete this class?');">
+        <i class="fas fa-trash-alt me-1"></i> Delete
+    </button>
+</form>
+
                                 </td>
                             </tr>
                         }
@@ -465,7 +545,7 @@
 
 
         @* Edit Course *@
-        <div class="tab-pane fade" id="editcourse" role="tabpanel" aria-labelledby="editcourse-tab">
+<div class="tab-pane fade" id="editcourse" role="tabpanel" aria-labelledby="editcourse-tab">
             <h5 class="mb-3">Edit Course Details</h5>
             <form asp-action="EditCourse" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="Id" value="@Model.Course?.Id" />
@@ -520,10 +600,11 @@
                     </div>
                 </div>
             </form>
-        </div>
-    </div>
 </div>
-      
+
+
+    </div>
+</div> 
 
 <style>
     .tab-content h5 {
@@ -551,177 +632,194 @@
         background-color: #17a2b8;
         border-color: #17a2b8;
     }
+
+    /* Chat bubble styles */
+    #chatWindow div.message {
+        max-width: 70%;
+        padding: 8px 12px;
+        margin: 5px 0;
+        border-radius: 15px;
+        clear: both;
+        word-wrap: break-word;
+    }
+
+    #chatWindow div.message.sender {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto; /* right side */
+        text-align: right;
+    }
+
+    #chatWindow div.message.receiver {
+        background-color: #f1f1f1;
+        color: black;
+        margin-right: auto; /* left side */
+        text-align: left;
+    }
+
+    #chatWindow {
+        display: flex;
+        flex-direction: column;
+    }
 </style>
 
+
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.11/signalr.min.js"></script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const previewButtons = document.querySelectorAll(".preview-btn");
-            const previewContainer = document.getElementById("previewContainer");
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // --- Preview Button Logic ---
+    const previewButtons = document.querySelectorAll(".preview-btn");
+    const previewContainer = document.getElementById("previewContainer");
 
-            previewButtons.forEach(button => {
-                button.addEventListener("click", function () {
-                    const filePath = button.getAttribute("data-file").replace("~", "");
-                    const fileType = button.getAttribute("data-type").toLowerCase();
-                    let content = "";
+    previewButtons.forEach(button => {
+        button.addEventListener("click", function () {
+            const filePath = button.getAttribute("data-file").replace("~", "");
+            const fileType = button.getAttribute("data-type").toLowerCase();
+            let content = "";
 
-                    if (fileType === ".pdf") {
-                        content = `<iframe src="${filePath}" width="100%" height="600px" frameborder="0"></iframe>`;
-                    } else if (fileType === ".mp4") {
-                        content = `<video width="100%" controls><source src="${filePath}" type="video/mp4">Your browser does not support video.</video>`;
-                    } else if ([".jpg", ".jpeg", ".png", ".gif"].includes(fileType)) {
-                        content = `<img src="${filePath}" class="img-fluid" />`;
-                    } else {
-                        content = `<p class="text-danger">Preview not supported for this file type.</p>`;
-                    }
-
-                    previewContainer.innerHTML = content;
-                    const modal = new bootstrap.Modal(document.getElementById("materialPreviewModal"));
-                    modal.show();
-                });
-            });
-        });
-        document.addEventListener("DOMContentLoaded", function () {
-            const tabButtons = document.querySelectorAll('#courseTab button[data-bs-toggle="tab"]');
-            const activeTabLabel = document.getElementById('activeTabLabel');
-            const storedTabId = localStorage.getItem('activeCourseTabId');
-
-            if (storedTabId) {
-                const storedTab = document.querySelector(`#courseTab button#${storedTabId}`);
-                if (storedTab) new bootstrap.Tab(storedTab).show();
+            if (fileType === ".pdf") {
+                content = `<iframe src="${filePath}" width="100%" height="600px" frameborder="0"></iframe>`;
+            } else if (fileType === ".mp4") {
+                content = `<video width="100%" controls><source src="${filePath}" type="video/mp4">Your browser does not support video.</video>`;
+            } else if ([".jpg", ".jpeg", ".png", ".gif"].includes(fileType)) {
+                content = `<img src="${filePath}" class="img-fluid" />`;
             } else {
-                new bootstrap.Tab(document.querySelector('#courseTab button')).show();
+                content = `<p class="text-danger">Preview not supported for this file type.</p>`;
             }
 
-            tabButtons.forEach(btn => {
-                btn.addEventListener('shown.bs.tab', function (e) {
-                    const tabText = e.target.textContent.trim();
-                    const icon = e.target.querySelector('i')?.outerHTML || '';
-                    activeTabLabel.innerHTML = `${icon} ${tabText}`;
-                    localStorage.setItem('activeCourseTabId', e.target.id);
-                });
-            });
+            previewContainer.innerHTML = content;
+            const modal = new bootstrap.Modal(document.getElementById("materialPreviewModal"));
+            modal.show();
         });
-    </script>
+    });
 
+    // --- Tab Persistence Logic ---
+    const tabButtons = document.querySelectorAll('#courseTab button[data-bs-toggle="tab"]');
+    const activeTabLabel = document.getElementById('activeTabLabel');
+    const storedTabId = localStorage.getItem('activeCourseTabId');
+
+    if (storedTabId) {
+        const storedTab = document.querySelector(`#courseTab button#${storedTabId}`);
+        if (storedTab) new bootstrap.Tab(storedTab).show();
+    } else {
+        new bootstrap.Tab(document.querySelector('#courseTab button')).show();
+    }
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('shown.bs.tab', function (e) {
+            const tabText = e.target.textContent.trim();
+            const icon = e.target.querySelector('i')?.outerHTML || '';
+            activeTabLabel.innerHTML = `${icon} ${tabText}`;
+            localStorage.setItem('activeCourseTabId', e.target.id);
+        });
+    });
+
+    // --- SweetAlert Messages ---
+    function showAlert(type, message) {
+        Swal.fire({
+            icon: type,
+            title: type === 'success' ? 'Success' : 'Error',
+            text: message
+        });
+    }
+
+    @* Razor TempData checks *@
     @if (TempData["SuccessEnroll"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: '@TempData["SuccessEnroll"]'
-            });
-        </script>
+        <text>showAlert('success', '@TempData["SuccessEnroll"]');</text>
     }
-
     @if (TempData["ErrorMessageEnroll"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: '@TempData["ErrorMessageEnroll"]'
-            });
-        </script>
+        <text>showAlert('error', '@TempData["ErrorMessageEnroll"]');</text>
     }
-
     @if (TempData["SuccessEditCourse"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: '@TempData["SuccessEditCourse"]',
-                background: '#d4edda',
-                color: '#155724',
-            });
-        </script>
+        <text>showAlert('success', '@TempData["SuccessEditCourse"]');</text>
     }
-
     @if (TempData["SuccessMaterials"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: '@TempData["SuccessMaterials"]',
-                background: '#d4edda',
-                color: '#155724',
-            });
-        </script>
+        <text>showAlert('success', '@TempData["SuccessMaterials"]');</text>
     }
     @if (TempData["SuccessAssignment"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: '@TempData["SuccessAssignment"]',
-                background: '#d4edda',
-                color: '#155724',
-            });
-        </script>
+        <text>showAlert('success', '@TempData["SuccessAssignment"]');</text>
     }
     @if (TempData["SuccessGrade"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: '@TempData["SuccessGrade"]',
-                background: '#d4edda',
-                color: '#155724',
-            });
-        </script>
+        <text>showAlert('success', '@TempData["SuccessGrade"]');</text>
     }
-
     @if (TempData["SuccessLiveClass"] != null)
     {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: '@TempData["SuccessLiveClass"]',
-                background: '#d4edda',
-                color: '#155724',
-            });
-        </script>
+        <text>showAlert('success', '@TempData["SuccessLiveClass"]');</text>
+    }
+    @if (TempData["ErrorLiveClass"] != null)
+    {
+        <text>showAlert('error', '@TempData["ErrorLiveClass"]');</text>
+    }
+      @if (TempData["SuccessDeleteClass"] != null)
+    {
+        <text>showAlert('success', '@TempData["SuccessDeleteClass"]');</text>
     }
 
-    @if (TempData["ErrorMessageLiveClass"] != null)
-    {
-        <script>
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: '@TempData["ErrorLiveClass"]',
-                background: '#f8d7da',
-                color: '#721c24',
-            });
-        </script>
+    // --- Chat / SignalR Logic ---
+    const chatWindow = document.getElementById("chatWindow");
+    const chatInput = document.getElementById("chatInput");
+    const sendButton = document.getElementById("sendButton");
 
+    if (chatWindow && chatInput && sendButton) {
+        const userName = "@User.Identity!.Name";
+        const courseId = "@Model.Id";
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chathub")
+            .build();
+
+        connection.on("ReceiveMessage", (user, message, time) => {
+            const div = document.createElement("div");
+            div.classList.add("message");
+            div.classList.add(user === userName ? "sender" : "receiver");
+            div.innerHTML = `<b>${user}</b>: ${message} <span class="text-muted">(${time})</span>`;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+
+        connection.start().then(() => console.log("SignalR connected"))
+            .catch(err => console.error("SignalR error:", err));
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            fetch("/api/Chat/SaveMessage", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ courseId, message })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    chatInput.value = "";
+                    connection.invoke("SendMessage", data.user, data.message, data.time)
+                        .catch(err => console.error(err));
+                } else {
+                    console.error("Message not saved:", data.error);
+                }
+            })
+            .catch(err => console.error("Fetch error:", err));
+        }
+
+        sendButton.addEventListener("click", sendMessage);
+        chatInput.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+});
+</script>
 }
 
-    @if (TempData["ErrorMessageCourseId"] != null)
-
-    {
-        <script>
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: '@TempData["ErrorMessageCourseId"]',
-                background: '#f8d7da',
-                color: '#721c24',
-            });
-        </script>
-    }
-
-
-    
-   
-     
- 
-      }

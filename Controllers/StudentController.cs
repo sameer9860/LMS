@@ -20,9 +20,9 @@ public class StudentController : Controller
 {
     var username = User.Identity?.Name;
     var student = _dbContext.Students
-        .Include(s => s.Enrollments)
+        .Include(s => s.Enrollments!)
         .ThenInclude(e => e.Course)
-        .FirstOrDefault(s => s.User.Username == username);
+        .FirstOrDefault(s => s.User!.Username == username);
 
     int enrolledCourseCount = student?.Enrollments?.Count ?? 0;
     ViewBag.MyCoursesCount = enrolledCourseCount;
@@ -38,7 +38,7 @@ public class StudentController : Controller
             .Include(s => s.User)
             .Include(s => s.Enrollments!)
                 .ThenInclude(e => e.Course)
-            .FirstOrDefault(s => s.User.Username == username);
+            .FirstOrDefault(s => s.User!.Username == username);
 
         if (student == null)
         {
@@ -46,43 +46,82 @@ public class StudentController : Controller
             return RedirectToAction("Login", "Account");
         }
 
-        var courses = student.Enrollments
+        var courses = student.Enrollments!
             .Where(e => e.Course != null)
             .Select(e => e.Course!)
             .ToList();
 
         return View(courses);
     }
-    public IActionResult CourseDetails(int id)
-    {
-        var course = _dbContext.Courses
-            .Include(c => c.Assignments)
-                .ThenInclude(a => a.Materials)
-            .Include(c => c.Enrollments)
-                .ThenInclude(e => e.Student)
+public IActionResult CourseDetails(int id)
+{
+    // Load course with related entities
+    var course = _dbContext.Courses
+            .Include(c => c.Assignments!)
+            .ThenInclude(a => a.Materials)
+            .Include(c => c.Enrollments!)
+            .ThenInclude(e => e.Student)
             .Include(c => c.Materials)
-            .Include(c => c.LiveClasses)
-            .FirstOrDefault(c => c.Id == id);
+            .Include(c => c.ChatMessages!)
+            .ThenInclude(m => m.User) // include User to avoid lazy loading issues
+        .Include(c => c.LiveClasses)
+        .FirstOrDefault(c => c.Id == id);
 
-        if (course == null) return NotFound();
+    if (course == null)
+        return NotFound();
 
-        var username = User.Identity.Name;
-        var student = _dbContext.Students
-            .Include(s => s.User)
-            .FirstOrDefault(s => s.User.Username == username);
+    // Get the current student
+    var username = User.Identity?.Name;
+    var student = _dbContext.Students
+        .Include(s => s.User)
+        .FirstOrDefault(s => s.User!.Username == username);
 
-        if (student == null) return Unauthorized();
+    if (student == null)
+        return Unauthorized();
 
-        var submissions = _dbContext.AssignmentSubmissions
-            .Include(s => s.Assignment)
-            .Where(s => s.StudentId == student.Id && s.Assignment.CourseId == id)
-            .ToList();
+    // Load student submissions for this course
+    var submissions = _dbContext.AssignmentSubmissions
+        .Include(s => s.Assignment)
+        .Where(s => s.StudentId == student.Id && s.Assignment!.CourseId == id)
+        .ToList();
 
-        ViewBag.CurrentStudentId = student.Id; // ✅ FIXED ViewBag name
-        ViewBag.Submissions = submissions;
-
-        return View(course);
+    // Update LiveClass status dynamically
+    foreach (var liveClass in course.LiveClasses!)
+    {
+        if (DateTime.Now >= liveClass.StartTime && DateTime.Now <= liveClass.EndTime)
+        {
+            liveClass.IsLive = true;
+            liveClass.IsCompleted = false;
+        }
+        else if (DateTime.Now > liveClass.EndTime)
+        {
+            liveClass.IsLive = false;
+            liveClass.IsCompleted = true;
+        }
+        else
+        {
+            liveClass.IsLive = false;
+            liveClass.IsCompleted = false; // upcoming
+        }
     }
+
+    // Get chat messages sorted by time
+  var chatMessages = _dbContext.ChatMessages
+    .Include(m => m.User)
+    .Where(m => m.CourseId == id)
+    .OrderBy(m => m.SentAt)
+    .ToList();
+
+ViewBag.ChatMessages = chatMessages;
+
+
+    // Pass data to ViewBag
+    ViewBag.CurrentStudentId = student.Id;
+    ViewBag.Submissions = submissions;
+
+    return View(course);
+}
+
 
 
 public IActionResult JoinLiveClass(int id)
@@ -124,7 +163,7 @@ public async Task<IActionResult> SubmitAssignment(int AssignmentId, IFormFile Su
     var username = User.Identity?.Name;
     var student = _dbContext.Students
         .Include(s => s.User)
-        .FirstOrDefault(s => s.User.Username == username);
+        .FirstOrDefault(s => s.User!.Username == username);
 
     if (student == null)
     {
@@ -181,7 +220,7 @@ public async Task<IActionResult> SubmitAssignment(int AssignmentId, IFormFile Su
     }
     catch (Exception ex)
     {
-        TempData["ErrorAssignment"] = "Something went wrong during submission.";
+        TempData["ErrorAssignment"] = "Something went wrong during submission." + ex.Message;
         // Optionally log ex.Message
     }
 
@@ -194,7 +233,6 @@ public async Task<IActionResult> SubmitAssignment(int AssignmentId, IFormFile Su
 }
 
 
-
     [HttpGet]
     public IActionResult MySubmissions()
     {
@@ -203,7 +241,7 @@ public async Task<IActionResult> SubmitAssignment(int AssignmentId, IFormFile Su
             return Unauthorized();
 
         var student = _dbContext.Students
-            .FirstOrDefault(s => s.User.Username == username);
+            .FirstOrDefault(s => s.User!.Username == username);
 
         if (student == null)
             return Unauthorized();

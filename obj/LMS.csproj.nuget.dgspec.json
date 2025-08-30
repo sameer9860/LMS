@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\OneDrive\\Documents\\LMS\\LMS\\LMS.csproj": {}
+    "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj": {}
   },
   "projects": {
-    "D:\\OneDrive\\Documents\\LMS\\LMS\\LMS.csproj": {
+    "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\OneDrive\\Documents\\LMS\\LMS\\LMS.csproj",
+        "projectUniqueName": "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj",
         "projectName": "LMS",
-        "projectPath": "D:\\OneDrive\\Documents\\LMS\\LMS\\LMS.csproj",
+        "projectPath": "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj",
         "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
-        "outputPath": "D:\\OneDrive\\Documents\\LMS\\LMS\\obj\\",
+        "outputPath": "E:\\Seventh Semester\\Project\\LMS\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -44,6 +44,14 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            },
+            "Microsoft.AspNetCore.SignalR": {
+              "target": "Package",
+              "version": "[1.2.0, )"
+            },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
               "version": "[8.0.2, )"
@@ -63,6 +71,10 @@
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
               "version": "[8.0.2, )"
+            },
+            "iTextSharp": {
+              "target": "Package",
+              "version": "[5.5.13.4, )"
             }
           },
           "imports": [

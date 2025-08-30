@@ -5,28 +5,60 @@
     Layout = "~/Views/Shared/DashboardLayout.cshtml";
      var activeTab = Context.Request.Query["tab"].ToString()?.ToLower() ?? "overview";
     var submissions = ViewBag.Submissions as List<LMS.Models.AssignmentSubmission>;
-    string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     int parsedUserId = 0;
-    int.TryParse(userId, out parsedUserId); // Safe even if userId is null/empty
+    int.TryParse(userId, out parsedUserId);
+    var chatMessages = ViewBag.ChatMessages as List<LMS.Models.ChatMessage> ?? new List<LMS.Models.ChatMessage>();
+ // Safe even if userId is null/empty
 }
+<style>
+    #chatWindow div.message {
+        max-width: 70%;
+        padding: 8px 12px;
+        margin: 5px 0;
+        border-radius: 15px;
+        clear: both;
+        word-wrap: break-word;
+    }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item">
-            <a asp-controller="Student" asp-action="MyCourses">
-                <i class="fas fa-graduation-cap"></i> My Courses
-            </a>
-        </li>
-        <li class="breadcrumb-item active" aria-current="page">
-            <i class="fas fa-book"></i> @Model.FullName
-        </li>
-        <li class="breadcrumb-item active" id="activeTabLabel" aria-current="page">
-            <i class="fas fa-info-circle"></i> Course
-        </li>
-    </ol>
-</nav>
+    #chatWindow div.message.sender {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto; /* right side */
+        text-align: right;
+    }
 
-<div class="container mt-2">
+    #chatWindow div.message.receiver {
+        background-color: #f1f1f1;
+        color: black;
+        margin-right: auto; /* left side */
+        text-align: left;
+    }
+
+    #chatWindow {
+        display: flex;
+        flex-direction: column;
+    }
+</style>
+
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-controller="Student" asp-action="MyCourses">
+                    <i class="fas fa-graduation-cap"></i> My Courses
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <i class="fas fa-book"></i> @Model.FullName
+            </li>
+            <li class="breadcrumb-item active" id="activeTabLabel" aria-current="page">
+                <i class="fas fa-info-circle"></i> Course
+            </li>
+        </ol>
+    </nav>
+
     <ul class="nav nav-tabs mb-3" id="courseTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
@@ -43,26 +75,29 @@
                 <span class="badge bg-info"><i class="fas fa-folder-open me-1"></i>Materials</span>
             </button>
         </li>
-         <li class="nav-item" role="presentation">
-    <button class="nav-link" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
-        <span class="badge bg-warning text-dark"><i class="fas fa-video me-1"></i>Live Classes</span>
-    </button>
-</li>
-
         <li class="nav-item" role="presentation">
-    <button class="nav-link @(activeTab == "assignments" ? "active" : "")" id="assignments-tab"
-            data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
-        <span class="badge bg-warning text-dark">
-            <i class="fas fa-tasks me-1"></i>Assignments
-        </span>
-    </button>
-</li>
-
+            <button class="nav-link" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
+                <span class="badge bg-warning text-dark"><i class="fas fa-video me-1"></i>Live Classes</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
+                <span class="badge bg-info text-dark"><i class="fas fa-comments me-1"></i>Chat</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "assignments" ? "active" : "")" id="assignments-tab"
+                    data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+                <span class="badge bg-warning text-dark">
+                    <i class="fas fa-tasks me-1"></i>Assignments
+                </span>
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="courseTabContent">
         <!-- Course Info Tab -->
-        <div class="tab-pane fade show active" id="course" role="tabpanel">
+<div class="tab-pane fade show active" id="course" role="tabpanel">
             <div class="card shadow-sm mb-3">
                 <img src="~/@(string.IsNullOrEmpty(Model.ImagePath) ? "images/default-course.png" : Model.ImagePath)" class="card-img-top" style="height:220px; object-fit:cover;" />
                 <div class="card-body">
@@ -75,10 +110,10 @@
                     <p><strong>Summary:</strong> @Model.Summary</p>
                 </div>
             </div>
-        </div>
+</div>
 
         <!-- Participants Tab -->
-        <div class="tab-pane fade" id="participants" role="tabpanel">
+<div class="tab-pane fade" id="participants" role="tabpanel">
             <h5>Enrolled Students</h5>
             @if (Model.Enrollments != null && Model.Enrollments.Any())
             {
@@ -119,342 +154,325 @@
             {
                 <div class="alert alert-info">No students enrolled yet.</div>
             }
-        </div>
+</div>
 
-       <!-- Materials Tab -->
+        <!-- Materials Tab -->
 <div class="tab-pane fade" id="materials" role="tabpanel">
-    <h5 class="mb-3">Course Materials</h5>
+            <h5 class="mb-3">Course Materials</h5>
 
-    @* Filter out assignment materials *@
-    @{
-        var assignmentMaterials = Model.Assignments?
-            .SelectMany(a => a.Materials ?? new List<LMS.Models.Material>())
-            .ToList() ?? new List<LMS.Models.Material>();
+            @* Filter out assignment materials *@
+            @{
+                var assignmentMaterials = Model.Assignments?
+                    .SelectMany(a => a.Materials ?? new List<LMS.Models.Material>())
+                    .ToList() ?? new List<LMS.Models.Material>();
 
-        var courseMaterials = Model.Materials?
-            .Where(m => !assignmentMaterials.Contains(m))
-            .ToList() ?? new List<LMS.Models.Material>();
-    }
-
-    @if (courseMaterials.Any())
-    {
-        <ul class="list-group mb-4">
-            @foreach (var material in courseMaterials)
-            {
-                var filePath = Url.Content("~/" + material.FilePath);
-                var ext = System.IO.Path.GetExtension(material.FilePath)?.ToLower() ?? "";
-
-                <li class="list-group-item mb-3">
-                    <h6>@material.Title</h6>
-                    @if (!string.IsNullOrEmpty(material.Description))
-                    {
-                        <p class="text-muted">@material.Description</p>
-                    }
-                    <div class="mb-2">
-                        @if (ext == ".pdf")
-                        {
-                            <iframe src="@filePath" style="width:100%; height:400px;" frameborder="0"></iframe>
-                        }
-                        else if (new string[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" }.Contains(ext))
-                        {
-                            <img src="@filePath" class="img-fluid" alt="@material.Title" />
-                        }
-                        else if (new string[] { ".mp4", ".webm", ".ogg" }.Contains(ext))
-                        {
-                            <video controls style="width:100%; max-height:400px;">
-                                <source src="@filePath" type="video/@ext.TrimStart('.')">
-                                Your browser does not support the video tag.
-                            </video>
-                        }
-                        else
-                        {
-                            <p>No preview available.</p>
-                        }
-                    </div>
-                    <a href="@filePath" target="_blank" class="btn btn-outline-primary btn-sm mb-3">
-                        <i class="fas fa-download"></i> Download
-                    </a>
-                </li>
+                var courseMaterials = Model.Materials?
+                    .Where(m => !assignmentMaterials.Contains(m))
+                    .ToList() ?? new List<LMS.Models.Material>();
             }
-        </ul>
-    }
-    else
-    {
-        <div class="alert alert-info">No materials uploaded yet.</div>
-    }
-</div>
 
-
-<!-- Live Classes Tab -->
-<div class="tab-pane fade show active" id="live-classes" role="tabpanel">
-    <h5 class="mb-3">Live Classes</h5>
-
-    @if (Model.LiveClasses != null && Model.LiveClasses.Any())
-    {
-        <!-- Table View -->
-        <div class="table-responsive mb-4">
-            <table class="table table-bordered table-striped align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Title</th>
-                        <th>Start</th>
-                        <th>End</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.LiveClasses)
+            @if (courseMaterials.Any())
+            {
+                <ul class="list-group mb-4">
+                    @foreach (var material in courseMaterials)
                     {
-                        var isOngoing = DateTime.Now >= item.StartTime && DateTime.Now <= item.EndTime;
-                        var isUpcoming = DateTime.Now < item.StartTime;
+                        var filePath = Url.Content("~/" + material.FilePath);
+                        var ext = System.IO.Path.GetExtension(material.FilePath)?.ToLower() ?? "";
 
-                        <tr>
-                            <td>@item.Title</td>
-                            <td>@item.StartTime.ToString("MMM dd, yyyy hh:mm tt")</td>
-                            <td>@item.EndTime.ToString("MMM dd, yyyy hh:mm tt")</td>
-                            <td>@item.Description</td>
-                            <td>
-                                @if (item.IsCompleted)
+                        <li class="list-group-item mb-3">
+                            <h6>@material.Title</h6>
+                            @if (!string.IsNullOrEmpty(material.Description))
+                            {
+                                <p class="text-muted">@material.Description</p>
+                            }
+                            <div class="mb-2">
+                                @if (ext == ".pdf")
                                 {
-                                    <span class="badge bg-danger">Ended</span>
+                                    <iframe src="@filePath" style="width:100%; height:400px;" frameborder="0"></iframe>
                                 }
-                                else if (item.IsLive)
+                                else if (new string[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" }.Contains(ext))
                                 {
-                                    <span class="badge bg-success">Live</span>
+                                    <img src="@filePath" class="img-fluid" alt="@material.Title" />
                                 }
-                                else if (isUpcoming)
+                                else if (new string[] { ".mp4", ".webm", ".ogg" }.Contains(ext))
                                 {
-                                    <span class="badge bg-info text-dark">Upcoming</span>
+                                    <video controls style="width:100%; max-height:400px;">
+                                        <source src="@filePath" type="video/@ext.TrimStart('.')">
+                                        Your browser does not support the video tag.
+                                    </video>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">Pending</span>
+                                    <p>No preview available.</p>
                                 }
-                            </td>
-                            <td>
-                                @if (item.IsLive && DateTime.Now < item.EndTime)
-                                {
-                                    <a href="@Url.Action("JoinLiveClass", "Student", new { id = item.Id })"
-                                       class="btn btn-sm btn-success me-2" target="_blank">
-                                        <i class="bi bi-camera-video"></i> Join
-                                    </a>
-
-                                    <a href="@Url.Action("LeaveLiveClass", "Student", new { id = item.Id })"
-                                       class="btn btn-sm btn-warning">
-                                        <i class="bi bi-box-arrow-left"></i> Leave
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">No Action</span>
-                                }
-                            </td>
-                        </tr>
+                            </div>
+                            <a href="@filePath" target="_blank" class="btn btn-outline-primary btn-sm mb-3">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </li>
                     }
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Optional: Card/List View -->
-        <h6>Live Class Details</h6>
-        <ul class="list-group">
-            @foreach (var liveClass in Model.LiveClasses)
-            {
-                var isOngoing = DateTime.Now >= liveClass.StartTime && DateTime.Now <= liveClass.EndTime;
-
-                <li class="list-group-item mb-3">
-                    <h5>@liveClass.Title</h5>
-                    <p>@liveClass.Description</p>
-                    <small>
-                        Scheduled: 
-                        @liveClass.StartTime.ToString("MMM dd, yyyy hh:mm tt") - 
-                        @liveClass.EndTime.ToString("MMM dd, yyyy hh:mm tt")
-                    </small>
-                    <div class="mt-2">
-                        @if (liveClass.IsLive && DateTime.Now < liveClass.EndTime)
-                        {
-                            <a href="@Url.Action("JoinLiveClass", "Student", new { id = liveClass.Id })"
-                               class="btn btn-primary me-2" target="_blank">
-                                <i class="bi bi-camera-video"></i> Join Live Class
-                            </a>
-
-                            <a href="@Url.Action("LeaveLiveClass", "Student", new { id = liveClass.Id })"
-                               class="btn btn-outline-danger">
-                                <i class="bi bi-box-arrow-left"></i> Leave
-                            </a>
-                        }
-                        else if (liveClass.IsCompleted)
-                        {
-                            <span class="text-muted">Class Ended</span>
-                        }
-                        else
-                        {
-                            <span class="text-muted">Not Started</span>
-                        }
-                    </div>
-                </li>
+                </ul>
             }
-        </ul>
-    }
-    else
-    {
-        <div class="alert alert-info">No live classes scheduled yet.</div>
-    }
+            else
+            {
+                <div class="alert alert-info">No materials uploaded yet.</div>
+            }
 </div>
 
+        <!-- Live Classes Tab -->
+<div class="tab-pane fade" id="live-classes" role="tabpanel">
+            <h5 class="mb-3">Live Classes</h5>
 
-
-      <!-- Assignments Tab -->
-<div class="tab-pane fade" id="assignments" role="tabpanel" aria-labelledby="assignments-tab">
-    @if (Model.Assignments != null && Model.Assignments.Any())
-    {
-        <ul class="list-group">
-            @foreach (var assignment in Model.Assignments)
+            @if (Model.LiveClasses != null && Model.LiveClasses.Any())
             {
-                // Get student's submission for this assignment
-                var submission = submissions.FirstOrDefault(s => s.AssignmentId == assignment.Id && s.StudentId == parsedUserId);
-                var collapseId = $"score-{assignment.Id}"; // unique collapse ID for Bootstrap
-                
-                <li class="list-group-item mb-4">
-                    <h5>@assignment.Title</h5>
-                    <p>@assignment.Description</p>
-                    <small class="text-muted">Due: @assignment.DueDate.ToString("MMM dd, yyyy") | Max Points: @assignment.PossiblePoints</small>
+                <!-- Table View -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.LiveClasses)
+                            {
+                                var isOngoing = DateTime.Now >= item.StartTime && DateTime.Now <= item.EndTime;
+                                var isUpcoming = DateTime.Now < item.StartTime;
 
-                    @* Assignment Materials *@
-                    @if (assignment.Materials != null && assignment.Materials.Any())
-                    {
-                        <div class="mt-3 mb-3">
-                            <strong>Resources:</strong>
-                            <ul class="list-group">
-                                @foreach (var material in assignment.Materials)
-                                {
-                                    var filePath = Url.Content("~/" + material.FilePath);
-                                    var ext = System.IO.Path.GetExtension(material.FilePath)?.ToLower() ?? "";
-                                    <li class="list-group-item">
-                                        <div><strong>@material.Title</strong></div>
-                                        @if (!string.IsNullOrEmpty(material.Description))
+                                <tr>
+                                    <td>@item.Title</td>
+                                    <td>@item.StartTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                    <td>@item.EndTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                    <td>@item.Description</td>
+                                    <td>
+                                        @if (item.IsCompleted)
                                         {
-                                            <small class="text-muted">@material.Description</small>
+                                            <span class="badge bg-danger">Ended</span>
                                         }
-                                        <div class="mt-2">
-                                            @if (ext == ".pdf")
-                                            {
-                                                <iframe src="@filePath" style="width:100%; height:400px;" frameborder="0"></iframe>
-                                            }
-                                            else if (new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" }.Contains(ext))
-                                            {
-                                                <img src="@filePath" class="img-fluid" alt="@material.Title" style="max-height:400px;" />
-                                            }
-                                            else if (new[] { ".mp4", ".webm", ".ogg" }.Contains(ext))
-                                            {
-                                                <video controls style="width:100%; max-height:400px;">
-                                                    <source src="@filePath" type="video/@ext.TrimStart('.')">
-                                                    Your browser does not support the video tag.
-                                                </video>
-                                            }
-                                            else
-                                            {
-                                                <a href="@filePath" target="_blank" class="btn btn-outline-info btn-sm me-2" rel="noopener noreferrer" >
-                                                    <i class="fas fa-eye"></i> View
-                                                </a>
-                                            }
-                                            <a href="@filePath" download class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-download"></i> Download
+                                        else if (item.IsLive)
+                                        {
+                                            <span class="badge bg-success">Live</span>
+                                        }
+                                        else if (isUpcoming)
+                                        {
+                                            <span class="badge bg-info text-dark">Upcoming</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Pending</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsLive && DateTime.Now < item.EndTime)
+                                        {
+                                            <a href="@Url.Action("JoinLiveClass", "Student", new { id = item.Id })"
+                                               class="btn btn-sm btn-success me-2">
+                                                <i class="bi bi-camera-video"></i> Join
                                             </a>
-                                        </div>
-                                    </li>
-                                }
-                            </ul>
+
+                                            <a href="@Url.Action("LeaveLiveClass", "Student", new { id = item.Id })"
+                                               class="btn btn-sm btn-warning">
+                                                <i class="bi bi-box-arrow-left"></i> Leave
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No Action</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">No live classes scheduled yet.</div>
+            }
+</div>
+
+        @* chat tab *@
+<div class="tab-pane fade" id="chat" role="tabpanel">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-dark">
+                    <i class="fas fa-comments"></i> Course Chat
+                </div>
+                <div class="card-body" style="height:400px; overflow-y:auto; background:#f9f9f9;" id="chatWindow">
+                    @foreach (var msg in chatMessages)
+                    {
+                        var isSender = msg.User!.Username == User.Identity!.Name;
+                        <div class="message @(isSender ? "sender" : "receiver")">
+                            <b>@msg.User.Username</b>: @msg.Message
+                            <span class="text-muted">(@msg.SentAt.ToShortTimeString())</span>
                         </div>
                     }
+                </div>
+                <div class="card-footer d-flex">
+                    <input type="text" id="chatInput" class="form-control" placeholder="Type a message..." />
+                    <button class="btn btn-primary ms-2" id="sendButton"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+</div>
 
-                    @* Submission Form or Submission info *@
-                    @if (submission == null)
+<!-- Assignments Tab -->
+<div class="tab-pane fade" id="assignments" role="tabpanel" aria-labelledby="assignments-tab">
+            @if (Model.Assignments != null && Model.Assignments.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var assignment in Model.Assignments)
                     {
-                        <form asp-action="SubmitAssignment" method="post" enctype="multipart/form-data" class="mt-3">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="AssignmentId" value="@assignment.Id" />
-                            <div class="mb-3">
-                                <label for="answerText-@assignment.Id" class="form-label">Answer (optional):</label>
-                                <textarea id="answerText-@assignment.Id" name="AnswerText" class="form-control" rows="3" placeholder="Write your answer here..."></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="submissionFile-@assignment.Id" class="form-label">File (required):</label>
-                                <input id="submissionFile-@assignment.Id" type="file" name="SubmissionFile" class="form-control" required />
-                            </div>
-                            <button type="submit" class="btn btn-success">Submit</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <div class="mt-3">
-                            <p class="text-success"><i class="fas fa-check-circle"></i> Submitted</p>
-                            <small class="text-muted">Submitted at @submission.SubmittedAt.ToString("MMM dd, yyyy hh:mm tt")</small>
+                        // Get student's submission for this assignment
+                        var submission = submissions!.FirstOrDefault(s => s.AssignmentId == assignment.Id && s.StudentId == parsedUserId);
+                        var collapseId = $"score-{assignment.Id}"; // unique collapse ID for Bootstrap
+                        
+                        <li class="list-group-item mb-4">
+                            <h5>@assignment.Title</h5>
+                            <p>@assignment.Description</p>
+                            <small class="text-muted">Due: @assignment.DueDate.ToString("MMM dd, yyyy") | Max Points: @assignment.PossiblePoints  | Pass Marks : @assignment.PassMarks</small>
 
-                            @if (!submission.MarksObtained.HasValue)
+                            @* Assignment Materials *@
+                            @if (assignment.Materials != null && assignment.Materials.Any())
                             {
-                                <div class="alert alert-warning mt-3 d-flex align-items-center" role="alert">
-                                    <i class="fas fa-hourglass-half me-2"></i>
-                                    <div>Pending for Grading</div>
-                                </div>
-                            }
-                            else
-                            {
-                                <button class="btn btn-primary mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
-                                    View Score
-                                </button>
-                                <div class="collapse mt-3" id="@collapseId">
-                                    <table class="table table-bordered table-sm mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th scope="col" style="width:5%;">S.N.</th>
-                                                <th scope="col">Assignment</th>
-                                                <th scope="col" style="width:10%;">Marks</th>
-                                                <th scope="col" style="width:10%;">Status</th>
-                                                <th scope="col">Feedback</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>@(submissions.IndexOf(submission) + 1)</td>
-                                                <td>@assignment.Title</td>
-                                                <td>@submission.MarksObtained / @assignment.PossiblePoints</td>
-                                                <td>
-                                                    @if (submission.IsPassed == true)
+                                <div class="mt-3 mb-3">
+                                    <strong>Resources:</strong>
+                                    <ul class="list-group">
+                                        @foreach (var material in assignment.Materials)
+                                        {
+                                            var filePath = Url.Content("~/" + material.FilePath);
+                                            var ext = System.IO.Path.GetExtension(material.FilePath)?.ToLower() ?? "";
+                                            <li class="list-group-item">
+                                                <div><strong>@material.Title</strong></div>
+                                                @if (!string.IsNullOrEmpty(material.Description))
+                                                {
+                                                    <small class="text-muted">@material.Description</small>
+                                                }
+                                                <div class="mt-2">
+                                                    @if (ext == ".pdf")
                                                     {
-                                                        <span class="badge bg-success">Passed</span>
+                                                        <iframe src="@filePath" style="width:100%; height:400px;" frameborder="0"></iframe>
+                                                    }
+                                                    else if (new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" }.Contains(ext))
+                                                    {
+                                                        <img src="@filePath" class="img-fluid" alt="@material.Title" style="max-height:400px;" />
+                                                    }
+                                                    else if (new[] { ".mp4", ".webm", ".ogg" }.Contains(ext))
+                                                    {
+                                                        <video controls style="width:100%; max-height:400px;">
+                                                            <source src="@filePath" type="video/@ext.TrimStart('.')">
+                                                            Your browser does not support the video tag.
+                                                        </video>
                                                     }
                                                     else
                                                     {
-                                                        <span class="badge bg-danger">Failed</span>
+                                                        <a href="@filePath" target="_blank" class="btn btn-outline-info btn-sm me-2" rel="noopener noreferrer" >
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
                                                     }
-                                                </td>
-                                                <td>@(string.IsNullOrWhiteSpace(submission.Feedback) ? "No feedback" : submission.Feedback)</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                                    <a href="@filePath" download class="btn btn-outline-primary btn-sm">
+                                                        <i class="fas fa-download"></i> Download
+                                                    </a>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
                                 </div>
                             }
-                        </div>
+
+                            @* Submission Form or Submission info *@
+                            @if (submission == null)
+                            {
+                                <form asp-action="SubmitAssignment" method="post" enctype="multipart/form-data" class="mt-3">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="AssignmentId" value="@assignment.Id" />
+                                    <div class="mb-3">
+                                        <label for="answerText-@assignment.Id" class="form-label">Answer (optional):</label>
+                                        <textarea id="answerText-@assignment.Id" name="AnswerText" class="form-control" rows="3" placeholder="Write your answer here..."></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="submissionFile-@assignment.Id" class="form-label">File (required):</label>
+                                        <input id="submissionFile-@assignment.Id" type="file" name="SubmissionFile" class="form-control" required />
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Submit</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <div class="mt-3">
+                                    <p class="text-success"><i class="fas fa-check-circle"></i> Submitted</p>
+                                    <small class="text-muted">Submitted at @submission.SubmittedAt.ToString("MMM dd, yyyy hh:mm tt")</small>
+
+                                    @if (!submission.MarksObtained.HasValue)
+                                    {
+                                        <div class="alert alert-warning mt-3 d-flex align-items-center" role="alert">
+                                            <i class="fas fa-hourglass-half me-2"></i>
+                                            <div>Pending for Grading</div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-primary mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                                            View Score
+                                        </button>
+                                        <div class="collapse mt-3" id="@collapseId">
+                                            <table class="table table-bordered table-sm mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th scope="col" style="width:5%;">S.N.</th>
+                                                        <th scope="col">Assignment</th>
+                                                        <th scope="col" style="width:10%;">Marks</th>
+                                                        <th scope="col" style="width:10%;">Status</th>
+                                                        <th scope="col">Feedback</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>@(submissions!.IndexOf(submission) + 1)</td>
+                                                        <td>@assignment.Title</td>
+                                                        <td>@submission.MarksObtained / @assignment.PossiblePoints</td>
+                                                        <td>
+                                                            @if (submission.IsPassed == true)
+                                                            {
+                                                                <span class="badge bg-success">Passed</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-danger">Failed</span>
+                                                            }
+                                                        </td>
+                                                        <td>@(string.IsNullOrWhiteSpace(submission.Feedback) ? "No feedback" : submission.Feedback)</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </li>
                     }
-                </li>
+                </ul>
             }
-        </ul>
-    }
-    else
-    {
-        <div class="alert alert-info">No assignments available.</div>
-    }
+            else
+            {
+                <div class="alert alert-info">No assignments available.</div>
+            }
+</div>
+ </div>
 </div>
 
-
-
-
 @section Scripts {
+    <!-- SweetAlert -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.11/signalr.min.js"></script>
+
+    @* SweetAlert feedback *@
     @if (TempData["SuccessAssignment"] != null)
     {
         <script>
@@ -477,45 +495,113 @@
         </script>
     }
 
-   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const tabButtons = document.querySelectorAll('#courseTab button[data-bs-toggle="tab"]');
-        const activeTabLabel = document.getElementById('activeTabLabel');
-        const urlParams = new URLSearchParams(window.location.search);
-        const tabFromUrl = urlParams.get('tab');
-        const storageKey = 'activeCourseTabId';
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // --------------------------
+            // Tab management
+            // --------------------------
+            const tabButtons = document.querySelectorAll('#courseTab button[data-bs-toggle="tab"]');
+            const activeTabLabel = document.getElementById('activeTabLabel');
+            const storageKey = 'activeCourseTabId';
 
-        function activateTabById(tabId) {
-            const targetTab = document.querySelector(`#courseTab button#${tabId}`);
-            if (targetTab) {
-                new bootstrap.Tab(targetTab).show();
-                // Set the label when showing tab programmatically
-                const tabText = targetTab.textContent.trim();
-                const icon = targetTab.querySelector('i')?.outerHTML || '';
-                activeTabLabel.innerHTML = `${icon} ${tabText}`;
+            function activateTabById(tabId) {
+                const targetTab = document.querySelector(`#courseTab button#${tabId}`);
+                if (targetTab) {
+                    new bootstrap.Tab(targetTab).show();
+                    const icon = targetTab.querySelector('i')?.outerHTML || '';
+                    activeTabLabel.innerHTML = `${icon} ${targetTab.textContent.trim()}`;
+                }
             }
-        }
 
-        if (tabFromUrl) {
-            const tabId = tabFromUrl + '-tab';
-            activateTabById(tabId);
-            localStorage.setItem(storageKey, tabId);
-        } else {
-            const storedTabId = localStorage.getItem(storageKey);
-            if (storedTabId) {
-                activateTabById(storedTabId);
+            // Load tab from URL or localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabFromUrl = urlParams.get('tab');
+            if (tabFromUrl) {
+                activateTabById(tabFromUrl + '-tab');
+                localStorage.setItem(storageKey, tabFromUrl + '-tab');
+            } else {
+                const storedTabId = localStorage.getItem(storageKey);
+                if (storedTabId) activateTabById(storedTabId);
             }
-        }
 
-        tabButtons.forEach(btn => {
-            btn.addEventListener('shown.bs.tab', function (e) {
-                const tabText = e.target.textContent.trim();
-                const icon = e.target.querySelector('i')?.outerHTML || '';
-                activeTabLabel.innerHTML = `${icon} ${tabText}`;
-                localStorage.setItem(storageKey, e.target.id);
+            // Update active tab on click
+            tabButtons.forEach(btn => {
+                btn.addEventListener('shown.bs.tab', function (e) {
+                    const icon = e.target.querySelector('i')?.outerHTML || '';
+                    activeTabLabel.innerHTML = `${icon} ${e.target.textContent.trim()}`;
+                    localStorage.setItem(storageKey, e.target.id);
+                });
             });
-        });
-    });
-</script>
 
-}  
+            // --------------------------
+            // Chat Integration
+            // --------------------------
+    const userName = "@User.Identity!.Name";
+    const courseId = "@Model.Id";
+    const chatWindow = document.getElementById("chatWindow");
+    const chatInput = document.getElementById("chatInput");
+    const sendButton = document.getElementById("sendButton");
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chathub")
+        .build();
+
+    // Append received messages
+  connection.on("ReceiveMessage", (user, message, time) => {
+    const div = document.createElement("div");
+    div.classList.add("message");
+
+    // Determine if the message is from the current user
+    if (user === userName) {
+        div.classList.add("sender");
+    } else {
+        div.classList.add("receiver");
+    }
+
+    div.innerHTML = `<b>${user}</b>: ${message} <span class="text-muted">(${time})</span>`;
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+});
+
+    connection.start()
+        .then(() => console.log("SignalR connected"))
+        .catch(err => console.error("SignalR error:", err));
+
+    function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        fetch("/api/Chat/SaveMessage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ courseId: courseId, message: message })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                chatInput.value = "";
+
+                // **Call Hub to broadcast to all, including sender**
+                connection.invoke("SendMessage", data.user, data.message, data.time)
+                    .catch(err => console.error(err));
+            } else {
+                console.error("Message not saved:", data.error);
+            }
+        })
+        .catch(err => console.error("Fetch error:", err));
+    }
+
+    sendButton.addEventListener("click", sendMessage);
+    chatInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+        });
+
+    </script>
+
+    
+}

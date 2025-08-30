@@ -11,7 +11,7 @@ namespace LMS.ViewModels
 
         public  int CourseId { get; set; }
 
-        public CourseViewModels EditCourse { get; set; }
+        public CourseViewModels? EditCourse { get; set; }
 
 
         public List<Student>? Students { get; set; }
@@ -20,7 +20,14 @@ namespace LMS.ViewModels
         public List<Material>? Materials { get; set; }
         public List<Assignment>? Assignments { get; set; }
         public List<Instructor>? Instructors { get; set; }
-      
+
+        public List<ChatMessage>? ChatMessages { get; set; }
+
+        public  List<Quiz>? Quizzes { get; set; } // New
+
+        public List<MCQ>? MCQs { get; set; }
+
+
 
 
         

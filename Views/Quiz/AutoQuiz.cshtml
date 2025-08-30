@@ -1,0 +1,19 @@
+@model LMS.ViewModels.AutoQuizViewModel
+
+<h3>AI Generated Quiz</h3>
+<form asp-action="AutoQuiz" enctype="multipart/form-data" method="post">
+    <input type="hidden" asp-for="CourseId" />
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Quiz Title</label>
+        <input asp-for="Title" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Description</label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+    </div>
+    <div class="mb-3">
+        <label asp-for="PdfFile" class="form-label">Upload PDF / Course Material</label>
+        <input asp-for="PdfFile" type="file" class="form-control" />
+    </div>
+    <button class="btn btn-success">Generate Quiz</button>
+</form>

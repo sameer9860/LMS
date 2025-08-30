@@ -23,7 +23,7 @@ public class AdminController : Controller
 
    public IActionResult Dashboard()
 {
-    var username = User.Identity.Name;
+    var username = User.Identity!.Name;
 
     if (string.IsNullOrEmpty(username))
     {

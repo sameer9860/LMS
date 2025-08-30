@@ -1,0 +1,36 @@
+@model LMS.ViewModels.ManualQuizViewModel
+
+<h3>Create Manual Quiz</h3>
+<form asp-action="ManualQuiz" method="post">
+    <input type="hidden" asp-for="CourseId" />
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Quiz Title</label>
+        <input asp-for="Title" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Description</label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+    </div>
+    <div class="mb-3">
+        <label asp-for="DueDate" class="form-label">Due Date</label>
+        <input asp-for="DueDate" type="date" class="form-control" />
+    </div>
+
+    <h5>Questions</h5>
+    @for (int i = 0; i < 20; i++)
+    {
+        <div class="border p-2 mb-2">
+            <label>Question @(i + 1)</label>
+            <input name="Questions[@i].Question" class="form-control mb-1" placeholder="Enter question" />
+            <input name="Questions[@i].OptionA" class="form-control mb-1" placeholder="Option A" />
+            <input name="Questions[@i].OptionB" class="form-control mb-1" placeholder="Option B" />
+            <input name="Questions[@i].OptionC" class="form-control mb-1" placeholder="Option C" />
+            <input name="Questions[@i].OptionD" class="form-control mb-1" placeholder="Option D" />
+            <input name="Questions[@i].OptionE" class="form-control mb-1" placeholder="Option E (optional)" />
+            <input name="Questions[@i].CorrectAnswer" class="form-control mb-1" placeholder="Correct Answer (A/B/C/D/E)" />
+            <input name="Questions[@i].Feedback" class="form-control mb-1" placeholder="Feedback" />
+        </div>
+    }
+
+    <button class="btn btn-primary">Create Quiz</button>
+</form>

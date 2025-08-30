@@ -1,7 +1,7 @@
 @model LMS.Models.LiveClass
 @{
     ViewBag.Title = "Join Live Class";
-    string roomName = Model.RoomName;
+    string roomName = Model.RoomName!;
 }
 
 <h3>@Model.Title</h3>

@@ -40,7 +40,7 @@ private readonly ILogger<InstructorController> _logger;
         var username = User.Identity?.Name;
         var instructor = _dbContext.Instructors
             .Include(i => i.User)
-            .FirstOrDefault(i => i.User.Username == username);
+            .FirstOrDefault(i => i.User!.Username == username);
 
         if (instructor == null)
             return RedirectToAction("Login", "Account");
@@ -50,7 +50,7 @@ private readonly ILogger<InstructorController> _logger;
 
         // Total enrolled students in all courses of this instructor
         var totalEnrolledStudents = _dbContext.Enrollments
-            .Where(e => e.Course.Instructorid == instructor.id)
+            .Where(e => e.Course!.Instructorid == instructor.id)
             .Select(e => e.StudentId)
             .Distinct()
             .Count();
@@ -380,7 +380,7 @@ public IActionResult CourseDetails(int id)
     var course = _dbContext.Courses
         .Include(c => c.Materials)
         .Include(c => c.Assignments)
-        .Include(c => c.Enrollments)
+        .Include(c => c.Enrollments!)
             .ThenInclude(e => e.Student)
         .Include(c => c.LiveClasses)
         // .Include(c => c.Instructor) // Make sure to include instructors if needed
@@ -395,15 +395,24 @@ public IActionResult CourseDetails(int id)
     var username = User.Identity?.Name;
     var instructor = _dbContext.Instructors
         .Include(i => i.User)
-        .FirstOrDefault(i => i.User.Username == username);
+        .FirstOrDefault(i => i.User!.Username == username);
 
     // Get IDs of students already enrolled in this course
-    var enrolledStudentIds = course.Enrollments.Select(e => e.StudentId).ToList();
+    var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
 
     // Get students for this instructor who are NOT already enrolled
     var instructorStudents = _dbContext.Students
-        .Where(s => s.Instructorid == instructor.id && !enrolledStudentIds.Contains(s.Id))
+        .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
         .ToList();
+
+            // Get chat messages sorted by time
+  var chatMessages = _dbContext.ChatMessages
+    .Include(m => m.User)
+    .Where(m => m.CourseId == id)
+    .OrderBy(m => m.SentAt)
+    .ToList();
+
+ViewBag.ChatMessages = chatMessages;
 
     ViewBag.instructorStudents = instructorStudents;
 
@@ -425,6 +434,7 @@ public IActionResult CourseDetails(int id)
         Assignments = course.Assignments?.ToList(),
         Enrollments = course.Enrollments?.ToList(),
         LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
+        
         
         NewLiveClass = new LiveClassViewModel 
         { 
@@ -470,7 +480,7 @@ public IActionResult EditCourse(int id)
 
     var instructor = _dbContext.Instructors
         .Include(i => i.User)
-        .FirstOrDefault(i => i.User.Username == username);
+        .FirstOrDefault(i => i.User!.Username == username);
 
     if (instructor == null)
     {
@@ -559,7 +569,7 @@ public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, st
         var folder = Path.Combine(_env.WebRootPath, "uploads", "materials");
         Directory.CreateDirectory(folder);
 
-        var fileName = Guid.NewGuid() + Path.GetExtension(model.File.FileName);
+        var fileName = Guid.NewGuid() + Path.GetExtension(model.File!.FileName);
         var fullPath = Path.Combine(folder, fileName);
 
         using (var stream = new FileStream(fullPath, FileMode.Create))
@@ -586,7 +596,7 @@ public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, st
         // ✅ Send notifications to enrolled students
         var enrolledStudentIds = _dbContext.Enrollments
             .Where(e => e.CourseId == model.CourseId)
-            .Select(e => e.Student.UserId) // Assuming Student has navigation to User
+            .Select(e => e.Student!.UserId) // Assuming Student has navigation to User
             .ToList();
 
         foreach (var userId in enrolledStudentIds)
@@ -675,16 +685,16 @@ public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, st
         // Notify enrolled students
         var enrolledUsers = _dbContext.Enrollments
             .Include(e => e.Student)
-            .ThenInclude(s => s.User)
+            .ThenInclude(s => s!.User)
             .Where(e => e.CourseId == model.CourseId)
-            .Select(e => e.Student.User)
+            .Select(e => e.Student!.User)
             .ToList();
 
         foreach (var user in enrolledUsers)
         {
             _dbContext.Notifications.Add(new Notification
             {
-                UserId = user.Id ,
+                UserId = user!.Id ,
                 Title = "New Assignment",
                 Message = $"A new assignment \"{assignment.Title}\" has been added.",
                 NotificationType = "assignment",
@@ -764,7 +774,7 @@ public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, st
 
 
     // POST: Save the scheduled live class
- [HttpPost]
+[HttpPost]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
 {
@@ -777,11 +787,10 @@ public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
     // If ModelState is invalid, reload the CourseDetails view with errors
     if (!ModelState.IsValid)
     {
-        // Reload course and related data for the view model
         var course = _dbContext.Courses
             .Include(c => c.Materials)
             .Include(c => c.Assignments)
-            .Include(c => c.Enrollments)
+                .Include(c => c.Enrollments!)
                 .ThenInclude(e => e.Student)
             .Include(c => c.LiveClasses)
             .FirstOrDefault(c => c.Id == model.CourseId);
@@ -792,15 +801,14 @@ public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
             return NotFound();
         }
 
-        // Get instructor and students for dropdowns, etc.
         var username = User.Identity?.Name;
         var instructor = _dbContext.Instructors
             .Include(i => i.User)
-            .FirstOrDefault(i => i.User.Username == username);
+            .FirstOrDefault(i => i.User!.Username == username);
 
-        var enrolledStudentIds = course.Enrollments.Select(e => e.StudentId).ToList();
+        var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
         var instructorStudents = _dbContext.Students
-            .Where(s => s.Instructorid == instructor.id && !enrolledStudentIds.Contains(s.Id))
+            .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
             .ToList();
         ViewBag.instructorStudents = instructorStudents;
 
@@ -817,10 +825,9 @@ public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
             Assignments = course.Assignments?.ToList(),
             Enrollments = course.Enrollments?.ToList(),
             LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
-            NewLiveClass = model // Pass back the invalid model to show errors
+            NewLiveClass = model
         };
 
-        // Return the same view so validation errors are shown
         return View("CourseDetails", viewModel);
     }
 
@@ -860,31 +867,60 @@ public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
         _dbContext.LiveClasses.Add(newLive);
         await _dbContext.SaveChangesAsync();
 
+        // ✅ Send notifications to enrolled students
+        var enrolledStudentIds = _dbContext.Enrollments
+            .Where(e => e.CourseId == model.CourseId)
+            .Select(e => e.Student!.UserId)
+            .ToList();
+
+        foreach (var userId in enrolledStudentIds)
+        {
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = "New Live Class Scheduled",
+                Message = $"A new live class \"{model.Title}\" has been scheduled.",
+                NotificationType = "live-class",
+                RelatedId = newLive.Id,
+                CreatedAt = DateTime.Now,
+                IconClass = "bi bi-camera-video",
+                ActionUrl = $"/Student/CourseDetails/{model.CourseId}?tab=live-classes"
+            };
+
+            _dbContext.Notifications.Add(notification);
+        }
+
+        await _dbContext.SaveChangesAsync();
+
         TempData["SuccessLiveClass"] = $"Live class '{model.Title}' scheduled successfully!";
         return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
     }
     catch (Exception ex)
     {
-        TempData["ErrorLiveClass"] = "An error occurred while scheduling the live class.";
+        TempData["ErrorLiveClass"] = "An error occurred while scheduling the live class." + ex.Message;
         return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
     }
 }
+
 // Helper method for better room name generation
 
 [HttpPost]
+[ValidateAntiForgeryToken]
 public IActionResult DeleteLiveClass(int id)
 {
     var liveClass = _dbContext.LiveClasses.Find(id);
-    if (liveClass == null) return NotFound();
+    if (liveClass == null)
+        return NotFound();
 
     int courseId = liveClass.CourseId;
 
     _dbContext.LiveClasses.Remove(liveClass);
     _dbContext.SaveChanges();
 
-    TempData["SuccessMessage"] = "Live class deleted.";
+    TempData["SuccessDeleteClass"] = "Live class deleted successfully.";
     return RedirectToAction("CourseDetails", new { id = courseId, tab = "live-classes" });
 }
+
 
 
     public IActionResult JoinLiveClass(int id)
