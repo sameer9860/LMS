@@ -1,19 +1,36 @@
-@model LMS.ViewModels.AutoQuizViewModel
+@model LMS.ViewModels.QuizViewModel
+@{
+    ViewData["Title"] = "Create AI Quiz";
+}
 
-<h3>AI Generated Quiz</h3>
-<form asp-action="AutoQuiz" enctype="multipart/form-data" method="post">
+<h4>Create AI Quiz (Auto-generated)</h4>
+
+<form asp-action="AutoQuiz" method="post" enctype="multipart/form-data">
     <input type="hidden" asp-for="CourseId" />
+
     <div class="mb-3">
         <label asp-for="Title" class="form-label">Quiz Title</label>
-        <input asp-for="Title" class="form-control" />
+        <input asp-for="Title" class="form-control" placeholder="Enter quiz title" />
+        <span asp-validation-for="Title" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="Description" class="form-label">Description</label>
-        <textarea asp-for="Description" class="form-control"></textarea>
+        <textarea asp-for="Description" class="form-control" placeholder="Optional description"></textarea>
     </div>
+
     <div class="mb-3">
-        <label asp-for="PdfFile" class="form-label">Upload PDF / Course Material</label>
-        <input asp-for="PdfFile" type="file" class="form-control" />
+        <label class="form-label">Upload PDF / Course Material</label>
+        <input asp-for="MaterialFile" type="file" class="form-control" />
+        <span asp-validation-for="MaterialFile" class="text-danger"></span>
     </div>
-    <button class="btn btn-success">Generate Quiz</button>
+
+    <button type="submit" class="btn btn-success">
+        <i class="fas fa-magic"></i> Generate AI Quiz
+    </button>
+    <a asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">Cancel</a>
 </form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

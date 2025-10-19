@@ -1,6 +1,6 @@
-using iTextSharp.text.pdf;
-using iTextSharp.text.pdf.parser;
-using System;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace LMS.Helpers
@@ -9,12 +9,14 @@ namespace LMS.Helpers
     {
         public static async Task<string> ExtractTextAsync(string filePath)
         {
-            using var reader = new PdfReader(filePath);
+            using var pdfReader = new PdfReader(filePath);
+            using var pdfDoc = new PdfDocument(pdfReader);
+
             var text = string.Empty;
 
-            for (int page = 1; page <= reader.NumberOfPages; page++)
+            for (int page = 1; page <= pdfDoc.GetNumberOfPages(); page++)
             {
-                text += PdfTextExtractor.GetTextFromPage(reader, page);
+                text += PdfTextExtractor.GetTextFromPage(pdfDoc.GetPage(page));
             }
 
             return await Task.FromResult(text);

@@ -25,10 +25,8 @@ namespace LMS.Views.Data
         public DbSet<Notification> Notifications { get; set; }
 
         public DbSet<ChatMessage> ChatMessages { get; set; }
-         
-         public DbSet<Quiz> Quizzes { get; set; }
-        
-        public DbSet<MCQ> MCQs { get; set; }
+                 
+        public DbSet<Quiz> Quizzes { get; set; }
 
 
       

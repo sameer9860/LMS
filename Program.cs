@@ -2,10 +2,9 @@ using LMS.Views.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
-
-
-
+using LMS.Services;
+using OpenAI;
+using OpenAI.Chat; // needed for ChatClient and messages
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 // ----------------------
 
 // Add DbContext with MySQL
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -23,6 +21,30 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add Controllers with Views
 builder.Services.AddControllersWithViews();
+
+// ----------------------
+// OpenAI ChatClient & AIQuizService
+// ----------------------
+
+// Get API key from config or environment
+string openAiApiKey = builder.Configuration["OpenAI:ApiKey"] ?? "default_value";
+
+if (string.IsNullOrWhiteSpace(openAiApiKey))
+    throw new InvalidOperationException("OpenAI API key not configured. Set OPENAI_API_KEY or OpenAI:ApiKey in appsettings.");
+
+// Register ChatClient (official SDK v2.3.0)
+builder.Services.AddSingleton<ChatClient>(sp =>
+{
+    string model = builder.Configuration["OpenAI:Model"] ?? "gpt-4o-mini";
+    return new ChatClient(model, openAiApiKey);
+});
+
+// Register AIQuizService for DI
+builder.Services.AddScoped<IAIQuizService, AIQuizService>();
+
+// ----------------------
+// Authentication, Session, SignalR
+// ----------------------
 
 // Add Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -74,11 +96,9 @@ app.UseAuthorization();
 // SignalR
 app.MapHub<LMS.Hubs.ChatHub>("/chathub");
 
+// Default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
-
-   
-
 
 app.Run();

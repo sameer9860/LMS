@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj": {}
+    "E:\\Projects\\LMS\\LMS.csproj": {}
   },
   "projects": {
-    "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj": {
+    "E:\\Projects\\LMS\\LMS.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj",
+        "projectUniqueName": "E:\\Projects\\LMS\\LMS.csproj",
         "projectName": "LMS",
-        "projectPath": "E:\\Seventh Semester\\Project\\LMS\\LMS.csproj",
+        "projectPath": "E:\\Projects\\LMS\\LMS.csproj",
         "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
-        "outputPath": "E:\\Seventh Semester\\Project\\LMS\\obj\\",
+        "outputPath": "E:\\Projects\\LMS\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -68,13 +68,17 @@
               "target": "Package",
               "version": "[8.0.2, )"
             },
+            "OpenAI": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
               "version": "[8.0.2, )"
             },
-            "iTextSharp": {
+            "itext7": {
               "target": "Package",
-              "version": "[5.5.13.4, )"
+              "version": "[9.3.0, )"
             }
           },
           "imports": [
@@ -88,6 +92,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.9, 9.0.9]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[9.0.9, 9.0.9]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.9, 9.0.9]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.9, 9.0.9]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -96,7 +118,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1,36 +1,115 @@
-@model LMS.ViewModels.ManualQuizViewModel
+@model LMS.ViewModels.QuizViewModel
+@{
+    ViewData["Title"] = "Create Manual Quiz";
+}
 
-<h3>Create Manual Quiz</h3>
+<h4>Create Manual Quiz</h4>
+
 <form asp-action="ManualQuiz" method="post">
     <input type="hidden" asp-for="CourseId" />
+
     <div class="mb-3">
         <label asp-for="Title" class="form-label">Quiz Title</label>
-        <input asp-for="Title" class="form-control" />
+        <input asp-for="Title" class="form-control" placeholder="Enter quiz title" />
+        <span asp-validation-for="Title" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="Description" class="form-label">Description</label>
-        <textarea asp-for="Description" class="form-control"></textarea>
+        <textarea asp-for="Description" class="form-control" placeholder="Optional description"></textarea>
     </div>
+
     <div class="mb-3">
         <label asp-for="DueDate" class="form-label">Due Date</label>
-        <input asp-for="DueDate" type="date" class="form-control" />
+        <input asp-for="DueDate" class="form-control" type="datetime-local" />
+        <span asp-validation-for="DueDate" class="text-danger"></span>
     </div>
 
+    <hr />
     <h5>Questions</h5>
-    @for (int i = 0; i < 20; i++)
-    {
-        <div class="border p-2 mb-2">
-            <label>Question @(i + 1)</label>
-            <input name="Questions[@i].Question" class="form-control mb-1" placeholder="Enter question" />
-            <input name="Questions[@i].OptionA" class="form-control mb-1" placeholder="Option A" />
-            <input name="Questions[@i].OptionB" class="form-control mb-1" placeholder="Option B" />
-            <input name="Questions[@i].OptionC" class="form-control mb-1" placeholder="Option C" />
-            <input name="Questions[@i].OptionD" class="form-control mb-1" placeholder="Option D" />
-            <input name="Questions[@i].OptionE" class="form-control mb-1" placeholder="Option E (optional)" />
-            <input name="Questions[@i].CorrectAnswer" class="form-control mb-1" placeholder="Correct Answer (A/B/C/D/E)" />
-            <input name="Questions[@i].Feedback" class="form-control mb-1" placeholder="Feedback" />
-        </div>
-    }
 
-    <button class="btn btn-primary">Create Quiz</button>
+    <div id="questionsContainer">
+        @for (int i = 0; i < Model.Questions.Count; i++)
+        {
+            <div class="card mb-3 p-3">
+                <h6>Question @(i + 1)</h6>
+                <input type="hidden" asp-for="@Model.Questions[i].Id" />
+
+                <div class="mb-2">
+                    <label asp-for="@Model.Questions[i].Question" class="form-label">Question Text</label>
+                    <input asp-for="@Model.Questions[i].Question" class="form-control" />
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <input asp-for="@Model.Questions[i].OptionA" class="form-control mb-1" placeholder="Option A" />
+                    </div>
+                    <div class="col">
+                        <input asp-for="@Model.Questions[i].OptionB" class="form-control mb-1" placeholder="Option B" />
+                    </div>
+                    <div class="col">
+                        <input asp-for="@Model.Questions[i].OptionC" class="form-control mb-1" placeholder="Option C" />
+                    </div>
+                    <div class="col">
+                        <input asp-for="@Model.Questions[i].OptionD" class="form-control mb-1" placeholder="Option D" />
+                    </div>
+                    <div class="col">
+                        <input asp-for="@Model.Questions[i].OptionE" class="form-control mb-1" placeholder="Option E (optional)" />
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label asp-for="@Model.Questions[i].CorrectAnswer" class="form-label">Correct Answer</label>
+                    <input asp-for="@Model.Questions[i].CorrectAnswer" class="form-control" placeholder="e.g., A, B, C..." />
+                </div>
+
+                <div class="mb-2">
+                    <label asp-for="@Model.Questions[i].Feedback" class="form-label">Feedback</label>
+                    <textarea asp-for="@Model.Questions[i].Feedback" class="form-control"></textarea>
+                </div>
+            </div>
+        }
+    </div>
+
+    <button type="button" id="addQuestion" class="btn btn-outline-primary mb-3">Add Another Question</button>
+
+    <br />
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Save Manual Quiz
+    </button>
+    <a asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">Cancel</a>
 </form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        let questionIndex = @Model.Questions.Count;
+
+        document.getElementById('addQuestion').addEventListener('click', function () {
+            const container = document.getElementById('questionsContainer');
+            const template = `
+            <div class="card mb-3 p-3">
+                <h6>Question ${questionIndex + 1}</h6>
+                <div class="mb-2">
+                    <input name="Questions[${questionIndex}].Question" class="form-control mb-1" placeholder="Question Text" />
+                </div>
+                <div class="row">
+                    <div class="col"><input name="Questions[${questionIndex}].OptionA" class="form-control mb-1" placeholder="Option A" /></div>
+                    <div class="col"><input name="Questions[${questionIndex}].OptionB" class="form-control mb-1" placeholder="Option B" /></div>
+                    <div class="col"><input name="Questions[${questionIndex}].OptionC" class="form-control mb-1" placeholder="Option C" /></div>
+                    <div class="col"><input name="Questions[${questionIndex}].OptionD" class="form-control mb-1" placeholder="Option D" /></div>
+                    <div class="col"><input name="Questions[${questionIndex}].OptionE" class="form-control mb-1" placeholder="Option E (optional)" /></div>
+                </div>
+                <div class="mb-2">
+                    <input name="Questions[${questionIndex}].CorrectAnswer" class="form-control mb-1" placeholder="Correct Answer" />
+                </div>
+                <div class="mb-2">
+                    <textarea name="Questions[${questionIndex}].Feedback" class="form-control" placeholder="Feedback"></textarea>
+                </div>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', template);
+            questionIndex++;
+        });
+    </script>
+}

@@ -25,7 +25,6 @@ namespace LMS.ViewModels
 
         public  List<Quiz>? Quizzes { get; set; } // New
 
-        public List<MCQ>? MCQs { get; set; }
 
 
 

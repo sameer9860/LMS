@@ -381,7 +381,9 @@ public IActionResult CourseDetails(int id)
         .Include(c => c.Materials)
         .Include(c => c.Assignments)
         .Include(c => c.Enrollments!)
-            .ThenInclude(e => e.Student)
+        .ThenInclude(e => e.Student)
+        .Include(c => c.Quizzes) // Include quizzes
+
         .Include(c => c.LiveClasses)
         // .Include(c => c.Instructor) // Make sure to include instructors if needed
         .FirstOrDefault(c => c.Id == id);
