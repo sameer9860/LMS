@@ -3,8 +3,11 @@
 @{
     ViewData["Title"] = "Join Live Class - " + Model.Title;
 }
-
-// Basic info
+<div class="mb-3">
+    <a asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Back to Course
+    </a>
+</div>
 <h3>@Model.Title</h3>
 <p>@Model.Description</p>
 <p>Scheduled: @Model.StartTime.ToString("MMM dd, yyyy hh:mm tt") - @Model.EndTime.ToString("MMM dd, yyyy hh:mm tt")</p>

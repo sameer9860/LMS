@@ -3,7 +3,11 @@
     ViewBag.Title = "Join Live Class";
     string roomName = Model.RoomName!;
 }
-
+<div class="mb-3">
+    <a asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Back to Course
+    </a>
+</div>
 <h3>@Model.Title</h3>
 <p><strong>Starts:</strong> @Model.StartTime.ToString("f")</p>
 <p><strong>Ends:</strong> @Model.EndTime.ToString("f")</p>
