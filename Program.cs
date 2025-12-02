@@ -68,6 +68,12 @@ builder.Services.AddAuthorization();
 // Add SignalR
 builder.Services.AddSignalR();
 
+//Add ActivityService
+builder.Services.AddScoped<IActivityService, ActivityService>();
+
+
+
+
 var app = builder.Build();
 
 // ----------------------
@@ -80,6 +86,23 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
+// Startup / Program.cs
+app.Use(async (context, next) =>
+{
+    // Call next first so controllers can set response if needed (optionally log after)
+    await next();
+
+    // Example: log only if user is authenticated and endpoint is relevant
+    var user = context.User?.Identity;
+    if (user?.IsAuthenticated == true)
+    {
+        var path = context.Request.Path.ToString();
+        // Decide what to log here or let controllers create detailed logs
+        // This is a simple example—more complete logic should live in controllers/services.
+    }
+});
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

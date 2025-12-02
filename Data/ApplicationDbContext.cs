@@ -25,11 +25,27 @@ namespace LMS.Views.Data
         public DbSet<Notification> Notifications { get; set; }
 
         public DbSet<ChatMessage> ChatMessages { get; set; }
-                 
+
         public DbSet<Quiz> Quizzes { get; set; }
 
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
 
-      
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ActivityLog>()
+                .Property(e => e.ActivityType)
+                .HasConversion<int>();
 
+            modelBuilder.Entity<ActivityLog>()
+                .HasIndex(a => new { a.UserId, a.Timestamp });
+
+            modelBuilder.Entity<ActivityLog>()
+                .HasIndex(a => new { a.CourseId, a.Timestamp });
+
+            modelBuilder.Entity<ActivityLog>()
+                .HasIndex(a => new { a.ActivityType, a.Timestamp });
+
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

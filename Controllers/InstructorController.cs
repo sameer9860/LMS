@@ -25,7 +25,7 @@ public class InstructorController : Controller
 
     private readonly IWebHostEnvironment _env;
 
-private readonly ILogger<InstructorController> _logger;
+    private readonly ILogger<InstructorController> _logger;
     public InstructorController(ApplicationDbContext dbContext, IWebHostEnvironment env, ILogger<InstructorController> logger)
     {
 
@@ -373,83 +373,83 @@ private readonly ILogger<InstructorController> _logger;
         TempData["SuccessCourse"] = "Course created successfully!";
         return RedirectToAction("Course");
     }
-    
-public IActionResult CourseDetails(int id)
-{
-        if (id <= 0) return NotFound();
-    var course = _dbContext.Courses
-        .Include(c => c.Materials)
-        .Include(c => c.Assignments)
-        .Include(c => c.Enrollments!)
-        .ThenInclude(e => e.Student)
-        .Include(c => c.Quizzes) // Include quizzes
 
-        .Include(c => c.LiveClasses)
-        // .Include(c => c.Instructor) // Make sure to include instructors if needed
-        .FirstOrDefault(c => c.Id == id);
-
-    if (course == null)
+    public IActionResult CourseDetails(int id)
     {
-        return NotFound();
-    }
+        if (id <= 0) return NotFound();
+        var course = _dbContext.Courses
+            .Include(c => c.Materials)
+            .Include(c => c.Assignments)
+            .Include(c => c.Enrollments!)
+            .ThenInclude(e => e.Student)
+            .Include(c => c.Quizzes) // Include quizzes
 
-    // Get the logged-in instructor's ID
-    var username = User.Identity?.Name;
-    var instructor = _dbContext.Instructors
-        .Include(i => i.User)
-        .FirstOrDefault(i => i.User!.Username == username);
+            .Include(c => c.LiveClasses)
+            // .Include(c => c.Instructor) // Make sure to include instructors if needed
+            .FirstOrDefault(c => c.Id == id);
 
-    // Get IDs of students already enrolled in this course
-    var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
+        if (course == null)
+        {
+            return NotFound();
+        }
 
-    // Get students for this instructor who are NOT already enrolled
-    var instructorStudents = _dbContext.Students
-        .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
-        .ToList();
+        // Get the logged-in instructor's ID
+        var username = User.Identity?.Name;
+        var instructor = _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefault(i => i.User!.Username == username);
 
-            // Get chat messages sorted by time
-  var chatMessages = _dbContext.ChatMessages
-    .Include(m => m.User)
-    .Where(m => m.CourseId == id)
-    .OrderBy(m => m.SentAt)
-    .ToList();
+        // Get IDs of students already enrolled in this course
+        var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
 
-ViewBag.ChatMessages = chatMessages;
+        // Get students for this instructor who are NOT already enrolled
+        var instructorStudents = _dbContext.Students
+            .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
+            .ToList();
 
-    ViewBag.instructorStudents = instructorStudents;
+        // Get chat messages sorted by time
+        var chatMessages = _dbContext.ChatMessages
+          .Include(m => m.User)
+          .Where(m => m.CourseId == id)
+          .OrderBy(m => m.SentAt)
+          .ToList();
+
+        ViewBag.ChatMessages = chatMessages;
+
+        ViewBag.instructorStudents = instructorStudents;
 
         // Set default times for the new live class (e.g., now + 1 hour to now + 2 hours)
         var defaultStartTime = DateTime.Now;
         var defaultEndTime = defaultStartTime.AddHours(1);
 
-    var viewModel = new CourseDetailsViewModel
-    {
-        Id = course.Id,
-        Course = course,
-        CourseId = course.Id,
-        Students = course.Enrollments?
-            .Where(e => e.Student != null)
-            .Select(e => e.Student!)
-            .ToList(),
-        
-        Materials = course.Materials?.ToList(),
-        Assignments = course.Assignments?.ToList(),
-        Enrollments = course.Enrollments?.ToList(),
-        LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
-        
-        
-        NewLiveClass = new LiveClassViewModel 
-        { 
+        var viewModel = new CourseDetailsViewModel
+        {
+            Id = course.Id,
+            Course = course,
             CourseId = course.Id,
-            StartTime = defaultStartTime,
-            EndTime = defaultEndTime,
-            // Set default room name or leave it to be generated in the controller
-            RoomName = $"class-{course.Id}-{DateTime.Now.Ticks}" 
-        }
-    };
+            Students = course.Enrollments?
+                .Where(e => e.Student != null)
+                .Select(e => e.Student!)
+                .ToList(),
 
-    return View(viewModel);
-}
+            Materials = course.Materials?.ToList(),
+            Assignments = course.Assignments?.ToList(),
+            Enrollments = course.Enrollments?.ToList(),
+            LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
+
+
+            NewLiveClass = new LiveClassViewModel
+            {
+                CourseId = course.Id,
+                StartTime = defaultStartTime,
+                EndTime = defaultEndTime,
+                // Set default room name or leave it to be generated in the controller
+                RoomName = $"class-{course.Id}-{DateTime.Now.Ticks}"
+            }
+        };
+
+        return View(viewModel);
+    }
 
     [HttpPost]
     public async Task<IActionResult> EnrollStudentToCourse(int courseId, int studentId)
@@ -475,83 +475,83 @@ ViewBag.ChatMessages = chatMessages;
         return RedirectToAction("CourseDetails", new { id = courseId });
     }
 
-[HttpGet]
-public IActionResult EditCourse(int id)
-{
-    var username = User.Identity?.Name;
-
-    var instructor = _dbContext.Instructors
-        .Include(i => i.User)
-        .FirstOrDefault(i => i.User!.Username == username);
-
-    if (instructor == null)
+    [HttpGet]
+    public IActionResult EditCourse(int id)
     {
-        TempData["ErrorMessage"] = "Unauthorized access.";
-        return RedirectToAction("Dashboard");
-    }
+        var username = User.Identity?.Name;
 
-    var course = _dbContext.Courses
-        .FirstOrDefault(c => c.Id == id && c.Instructorid == id);
+        var instructor = _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefault(i => i.User!.Username == username);
 
-    if (course == null)
-    {
-        TempData["ErrorMessage"] = "Course not found.";
-        return RedirectToAction("Dashboard");
-    }
-
-    var viewModel = new CourseDetailsViewModel
-    {
-        Course = course,
-        Id = course.Id
-    };
-
-    return View("CourseDetails", viewModel); // assuming you render edit form inside CourseDetails tab
-}
-
-
-   [HttpPost]
-public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, string ShortName, string Category, string CourseIdNumber, DateTime StartDate, DateTime EndDate, string Summary)
-{
-    var course = _dbContext.Courses.FirstOrDefault(c => c.Id == Id);
-
-    if (course == null)
-    {
-        TempData["ErrorMessage"] = "Course not found.";
-        return RedirectToAction("Dashboard");
-    }
-
-    // Update course properties
-    course.FullName = FullName;
-    course.ShortName = ShortName;
-    course.Category = Category;
-    course.CourseIdNumber = CourseIdNumber;
-    course.StartDate = StartDate;
-    course.EndDate = EndDate;
-    course.Summary = Summary;
-
-    // Save image if uploaded
-    if (ImagePath != null && ImagePath.Length > 0)
-    {
-        var fileName = Path.GetFileName(ImagePath.FileName);
-        var imagePath = Path.Combine("wwwroot/images/courses", fileName);
-
-        using (var stream = new FileStream(imagePath, FileMode.Create))
+        if (instructor == null)
         {
-            ImagePath.CopyTo(stream);
+            TempData["ErrorMessage"] = "Unauthorized access.";
+            return RedirectToAction("Dashboard");
         }
 
-        course.ImagePath = "images/courses/" + fileName;
+        var course = _dbContext.Courses
+            .FirstOrDefault(c => c.Id == id && c.Instructorid == id);
+
+        if (course == null)
+        {
+            TempData["ErrorMessage"] = "Course not found.";
+            return RedirectToAction("Dashboard");
+        }
+
+        var viewModel = new CourseDetailsViewModel
+        {
+            Course = course,
+            Id = course.Id
+        };
+
+        return View("CourseDetails", viewModel); // assuming you render edit form inside CourseDetails tab
     }
 
-    _dbContext.SaveChanges();
 
-    TempData["SuccessEditCourse"] = "Course updated successfully!";
-    return RedirectToAction("CourseDetails", new { id = Id });
-}
+    [HttpPost]
+    public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, string ShortName, string Category, string CourseIdNumber, DateTime StartDate, DateTime EndDate, string Summary)
+    {
+        var course = _dbContext.Courses.FirstOrDefault(c => c.Id == Id);
+
+        if (course == null)
+        {
+            TempData["ErrorMessage"] = "Course not found.";
+            return RedirectToAction("Dashboard");
+        }
+
+        // Update course properties
+        course.FullName = FullName;
+        course.ShortName = ShortName;
+        course.Category = Category;
+        course.CourseIdNumber = CourseIdNumber;
+        course.StartDate = StartDate;
+        course.EndDate = EndDate;
+        course.Summary = Summary;
+
+        // Save image if uploaded
+        if (ImagePath != null && ImagePath.Length > 0)
+        {
+            var fileName = Path.GetFileName(ImagePath.FileName);
+            var imagePath = Path.Combine("wwwroot/images/courses", fileName);
+
+            using (var stream = new FileStream(imagePath, FileMode.Create))
+            {
+                ImagePath.CopyTo(stream);
+            }
+
+            course.ImagePath = "images/courses/" + fileName;
+        }
+
+        _dbContext.SaveChanges();
+
+        TempData["SuccessEditCourse"] = "Course updated successfully!";
+        return RedirectToAction("CourseDetails", new { id = Id });
+    }
 
 
 
-   
+
 
 
 
@@ -696,7 +696,7 @@ public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, st
         {
             _dbContext.Notifications.Add(new Notification
             {
-                UserId = user!.Id ,
+                UserId = user!.Id,
                 Title = "New Assignment",
                 Message = $"A new assignment \"{assignment.Title}\" has been added.",
                 NotificationType = "assignment",
@@ -776,152 +776,152 @@ public IActionResult EditCourse(int Id, IFormFile ImagePath, string FullName, st
 
 
     // POST: Save the scheduled live class
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
-{
-    if (model.CourseId <= 0)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddLiveClass(LiveClassViewModel model)
     {
-        TempData["ErrorLiveClass"] = "Invalid course ID.";
-        return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
-    }
-
-    // If ModelState is invalid, reload the CourseDetails view with errors
-    if (!ModelState.IsValid)
-    {
-        var course = _dbContext.Courses
-            .Include(c => c.Materials)
-            .Include(c => c.Assignments)
-                .Include(c => c.Enrollments!)
-                .ThenInclude(e => e.Student)
-            .Include(c => c.LiveClasses)
-            .FirstOrDefault(c => c.Id == model.CourseId);
-
-        if (course == null)
+        if (model.CourseId <= 0)
         {
-            TempData["ErrorLiveClass"] = "Course not found.";
-            return NotFound();
+            TempData["ErrorLiveClass"] = "Invalid course ID.";
+            return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
         }
 
-        var username = User.Identity?.Name;
-        var instructor = _dbContext.Instructors
-            .Include(i => i.User)
-            .FirstOrDefault(i => i.User!.Username == username);
-
-        var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
-        var instructorStudents = _dbContext.Students
-            .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
-            .ToList();
-        ViewBag.instructorStudents = instructorStudents;
-
-        var viewModel = new CourseDetailsViewModel
+        // If ModelState is invalid, reload the CourseDetails view with errors
+        if (!ModelState.IsValid)
         {
-            Id = course.Id,
-            Course = course,
-            CourseId = course.Id,
-            Students = course.Enrollments?
-                .Where(e => e.Student != null)
-                .Select(e => e.Student!)
-                .ToList(),
-            Materials = course.Materials?.ToList(),
-            Assignments = course.Assignments?.ToList(),
-            Enrollments = course.Enrollments?.ToList(),
-            LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
-            NewLiveClass = model
-        };
+            var course = _dbContext.Courses
+                .Include(c => c.Materials)
+                .Include(c => c.Assignments)
+                    .Include(c => c.Enrollments!)
+                    .ThenInclude(e => e.Student)
+                .Include(c => c.LiveClasses)
+                .FirstOrDefault(c => c.Id == model.CourseId);
 
-        return View("CourseDetails", viewModel);
-    }
-
-    if (model.StartTime < DateTime.Now)
-    {
-        TempData["ErrorLiveClass"] = "Start time cannot be in the past.";
-        return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
-    }
-
-    if (model.EndTime <= model.StartTime)
-    {
-        TempData["ErrorLiveClass"] = "End time must be after start time.";
-        return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
-    }
-
-    try
-    {
-        var courseExists = await _dbContext.Courses.AnyAsync(c => c.Id == model.CourseId);
-        if (!courseExists)
-        {
-            TempData["ErrorLiveClass"] = "Course not found.";
-            return NotFound();
-        }
-
-        var newLive = new LiveClass
-        {
-            CourseId = model.CourseId,
-            Title = model.Title?.Trim(),
-            StartTime = model.StartTime,
-            EndTime = model.EndTime,
-            Description = model.Description?.Trim(),
-            IsLive = false,
-            IsCompleted = false,
-            RoomName = "class-" + Guid.NewGuid().ToString("N").Substring(0, 8)
-        };
-
-        _dbContext.LiveClasses.Add(newLive);
-        await _dbContext.SaveChangesAsync();
-
-        // ✅ Send notifications to enrolled students
-        var enrolledStudentIds = _dbContext.Enrollments
-            .Where(e => e.CourseId == model.CourseId)
-            .Select(e => e.Student!.UserId)
-            .ToList();
-
-        foreach (var userId in enrolledStudentIds)
-        {
-            var notification = new Notification
+            if (course == null)
             {
-                UserId = userId,
-                Title = "New Live Class Scheduled",
-                Message = $"A new live class \"{model.Title}\" has been scheduled.",
-                NotificationType = "live-class",
-                RelatedId = newLive.Id,
-                CreatedAt = DateTime.Now,
-                IconClass = "bi bi-camera-video",
-                ActionUrl = $"/Student/CourseDetails/{model.CourseId}?tab=live-classes"
+                TempData["ErrorLiveClass"] = "Course not found.";
+                return NotFound();
+            }
+
+            var username = User.Identity?.Name;
+            var instructor = _dbContext.Instructors
+                .Include(i => i.User)
+                .FirstOrDefault(i => i.User!.Username == username);
+
+            var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
+            var instructorStudents = _dbContext.Students
+                .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
+                .ToList();
+            ViewBag.instructorStudents = instructorStudents;
+
+            var viewModel = new CourseDetailsViewModel
+            {
+                Id = course.Id,
+                Course = course,
+                CourseId = course.Id,
+                Students = course.Enrollments?
+                    .Where(e => e.Student != null)
+                    .Select(e => e.Student!)
+                    .ToList(),
+                Materials = course.Materials?.ToList(),
+                Assignments = course.Assignments?.ToList(),
+                Enrollments = course.Enrollments?.ToList(),
+                LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
+                NewLiveClass = model
             };
 
-            _dbContext.Notifications.Add(notification);
+            return View("CourseDetails", viewModel);
         }
 
-        await _dbContext.SaveChangesAsync();
+        if (model.StartTime < DateTime.Now)
+        {
+            TempData["ErrorLiveClass"] = "Start time cannot be in the past.";
+            return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
+        }
 
-        TempData["SuccessLiveClass"] = $"Live class '{model.Title}' scheduled successfully!";
-        return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
+        if (model.EndTime <= model.StartTime)
+        {
+            TempData["ErrorLiveClass"] = "End time must be after start time.";
+            return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
+        }
+
+        try
+        {
+            var courseExists = await _dbContext.Courses.AnyAsync(c => c.Id == model.CourseId);
+            if (!courseExists)
+            {
+                TempData["ErrorLiveClass"] = "Course not found.";
+                return NotFound();
+            }
+
+            var newLive = new LiveClass
+            {
+                CourseId = model.CourseId,
+                Title = model.Title?.Trim(),
+                StartTime = model.StartTime,
+                EndTime = model.EndTime,
+                Description = model.Description?.Trim(),
+                IsLive = false,
+                IsCompleted = false,
+                RoomName = "class-" + Guid.NewGuid().ToString("N").Substring(0, 8)
+            };
+
+            _dbContext.LiveClasses.Add(newLive);
+            await _dbContext.SaveChangesAsync();
+
+            // ✅ Send notifications to enrolled students
+            var enrolledStudentIds = _dbContext.Enrollments
+                .Where(e => e.CourseId == model.CourseId)
+                .Select(e => e.Student!.UserId)
+                .ToList();
+
+            foreach (var userId in enrolledStudentIds)
+            {
+                var notification = new Notification
+                {
+                    UserId = userId,
+                    Title = "New Live Class Scheduled",
+                    Message = $"A new live class \"{model.Title}\" has been scheduled.",
+                    NotificationType = "live-class",
+                    RelatedId = newLive.Id,
+                    CreatedAt = DateTime.Now,
+                    IconClass = "bi bi-camera-video",
+                    ActionUrl = $"/Student/CourseDetails/{model.CourseId}?tab=live-classes"
+                };
+
+                _dbContext.Notifications.Add(notification);
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["SuccessLiveClass"] = $"Live class '{model.Title}' scheduled successfully!";
+            return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorLiveClass"] = "An error occurred while scheduling the live class." + ex.Message;
+            return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
+        }
     }
-    catch (Exception ex)
+
+    // Helper method for better room name generation
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult DeleteLiveClass(int id)
     {
-        TempData["ErrorLiveClass"] = "An error occurred while scheduling the live class." + ex.Message;
-        return RedirectToAction("CourseDetails", new { id = model.CourseId, tab = "live-classes" });
+        var liveClass = _dbContext.LiveClasses.Find(id);
+        if (liveClass == null)
+            return NotFound();
+
+        int courseId = liveClass.CourseId;
+
+        _dbContext.LiveClasses.Remove(liveClass);
+        _dbContext.SaveChanges();
+
+        TempData["SuccessDeleteClass"] = "Live class deleted successfully.";
+        return RedirectToAction("CourseDetails", new { id = courseId, tab = "live-classes" });
     }
-}
-
-// Helper method for better room name generation
-
-[HttpPost]
-[ValidateAntiForgeryToken]
-public IActionResult DeleteLiveClass(int id)
-{
-    var liveClass = _dbContext.LiveClasses.Find(id);
-    if (liveClass == null)
-        return NotFound();
-
-    int courseId = liveClass.CourseId;
-
-    _dbContext.LiveClasses.Remove(liveClass);
-    _dbContext.SaveChanges();
-
-    TempData["SuccessDeleteClass"] = "Live class deleted successfully.";
-    return RedirectToAction("CourseDetails", new { id = courseId, tab = "live-classes" });
-}
 
 
 
@@ -936,6 +936,38 @@ public IActionResult DeleteLiveClass(int id)
         // Redirect or view for live session
         return View("JoinLiveClass", liveClass); // You can update this view to launch the meeting.
     }
+
+[Authorize(Roles = "Instructor")]
+public async Task<IActionResult> ActivityLogs(ActivityLogFilterViewModel filter)
+{
+    var query = _dbContext.ActivityLogs.AsQueryable();
+
+    // Filter by student
+    if (!string.IsNullOrEmpty(filter.StudentId))
+        query = query.Where(x => x.UserId == filter.StudentId);
+
+    // Filter by course
+    if (!string.IsNullOrEmpty(filter.CourseId))
+        query = query.Where(x => x.CourseId == filter.CourseId);
+
+    // Filter by activity type
+    if (filter.ActivityType.HasValue)
+        query = query.Where(x => x.ActivityType == filter.ActivityType);
+
+    // Filter by date range
+    if (filter.FromDate.HasValue)
+        query = query.Where(x => x.Timestamp >= filter.FromDate);
+
+    if (filter.ToDate.HasValue)
+        query = query.Where(x => x.Timestamp <= filter.ToDate.Value.AddDays(1));
+
+    // Order newest first
+    filter.Logs = await query
+        .OrderByDescending(x => x.Timestamp)
+        .ToListAsync();
+
+    return View(filter);
+}
 
 
 }

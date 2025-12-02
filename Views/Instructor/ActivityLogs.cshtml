@@ -1,0 +1,84 @@
+@model ActivityLogFilterViewModel
+
+@{
+    ViewBag.Title = "Activity Logs";
+}
+
+<h2 class="mb-3">Student Activity Logs</h2>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label>Student ID</label>
+        <input type="text" class="form-control" name="StudentId" value="@Model.StudentId" />
+    </div>
+
+    <div class="col-md-3">
+        <label>Course ID</label>
+        <input type="text" class="form-control" name="CourseId" value="@Model.CourseId" />
+    </div>
+
+    <div class="col-md-3">
+        <label>Activity Type</label>
+        <select class="form-control" name="ActivityType">
+            <option value="">All</option>
+            @foreach (var type in Enum.GetValues(typeof(ActivityType)))
+            {
+                <option value="@type" selected="@(Model.ActivityType != null && Model.ActivityType.ToString() == type.ToString())">
+                    @type
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label>From</label>
+        <input type="date" class="form-control" name="FromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
+    </div>
+
+    <div class="col-md-3">
+        <label>To</label>
+        <input type="date" class="form-control" name="ToDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
+    </div>
+
+    <div class="col-md-3 align-self-end">
+        <button class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Timestamp</th>
+            <th>Student</th>
+            <th>Activity</th>
+            <th>Course</th>
+            <th>Resource</th>
+            <th>Duration (sec)</th>
+            <th>IP</th>
+            <th>UserAgent</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (Model.Logs != null && Model.Logs.Any())
+        {
+            foreach (var log in Model.Logs)
+            {
+                <tr>
+                    <td>@log.Timestamp.LocalDateTime</td>
+                    <td>@log.UserId</td>
+                    <td>@log.ActivityType</td>
+                    <td>@log.CourseId</td>
+                    <td>@log.ResourceId</td>
+                    <td>@log.DurationSeconds</td>
+                    <td>@log.IpAddress</td>
+                    <td>@log.UserAgent</td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr><td colspan="8" class="text-center">No activity logs found.</td></tr>
+        }
+    </tbody>
+</table>

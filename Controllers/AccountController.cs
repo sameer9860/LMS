@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using LMS.Views.Data;
+using LMS.Models;
+namespace LMS.Controllers
+{
 
 
 
@@ -25,8 +28,7 @@ using LMS.Views.Data;
         // POST: /Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LMS.ViewModels.LoginViewModel.LoginViewModel
- model)
+        public async Task<IActionResult> Login(LMS.ViewModels.LoginViewModel.LoginViewModel model)
         {
             if (!ModelState.IsValid)
                 return View(model);
@@ -43,15 +45,34 @@ using LMS.Views.Data;
             // Create claims for cookie authentication
             var claims = new[]
             {
-                new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
-                new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
-                new Claim("UserId", user.Id.ToString())
-            };
+        new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
+        new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
+        new Claim("UserId", user.Id.ToString())
+    };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            // 🔥 Add Activity Log for Login
+          var activity = new ActivityLog
+    {
+        UserId = user.Id.ToString(),
+        ActivityType = ActivityType.Login,
+        Timestamp = DateTimeOffset.UtcNow,
+        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+        UserAgent = Request.Headers["User-Agent"].ToString(),
+        MetadataJson = Newtonsoft.Json.JsonConvert.SerializeObject(new
+        {
+            Message = "User successfully logged in",
+            Username = user.Username
+        })
+    };
+
+    _context.ActivityLogs.Add(activity);
+    await _context.SaveChangesAsync();
+            // 🔥 END LOG
 
             // Redirect based on role
             return user.Role switch
@@ -63,6 +84,7 @@ using LMS.Views.Data;
             };
         }
 
+
         // GET: /Account/Logout
         [HttpGet]
         public async Task<IActionResult> Logout()
@@ -71,4 +93,4 @@ using LMS.Views.Data;
             return RedirectToAction("Login");
         }
     }
-
+}
