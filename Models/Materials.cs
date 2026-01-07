@@ -11,7 +11,7 @@ namespace LMS.Models
         [Required]
         public int CourseId { get; set; }
         [Required]
-        public string? Title { get; set; }               // e.g. "Week 1 Slides"
+        public string? Title { get; set; }               
         public string? Description { get; set; }
         [Required]
         public string? FilePath { get; set; }

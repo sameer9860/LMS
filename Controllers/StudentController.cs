@@ -1,244 +1,287 @@
 using Microsoft.AspNetCore.Mvc;
-
 using Microsoft.EntityFrameworkCore;
-using LMS.Views.Data; // Add this line or replace LMS.Data with the correct namespace for ApplicationDbContext
-using LMS.Models; // Add this line or replace with the correct namespace for AssignmentSubmission
+using LMS.Views.Data;
+using LMS.Models;
+using LMS.Services;
+using System.Text.Json;
 
 public class StudentController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly IActivityService _activity;
 
-    public StudentController(ApplicationDbContext dbContext, IWebHostEnvironment webHostEnvironment)
+    public StudentController(
+        ApplicationDbContext dbContext,
+        IWebHostEnvironment webHostEnvironment,
+        IActivityService activity)
     {
         _dbContext = dbContext;
         _webHostEnvironment = webHostEnvironment;
+        _activity = activity;
     }
 
-    // GET: /Student/Dashboard
- public IActionResult Dashboard()
-{
-    var username = User.Identity?.Name;
-    var student = _dbContext.Students
-        .Include(s => s.Enrollments!)
-        .ThenInclude(e => e.Course)
-        .FirstOrDefault(s => s.User!.Username == username);
+    // ---------------------- LOG HELPER ----------------------
+    private async Task LogAsync(ActivityType type, string? courseId = null, string? resourceId = null, object? meta = null)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var agent = Request.Headers["User-Agent"].ToString();
 
-    int enrolledCourseCount = student?.Enrollments?.Count ?? 0;
-    ViewBag.MyCoursesCount = enrolledCourseCount;
+        var log = new ActivityLog
+        {
+            UserId = User.Identity?.Name,
+            CourseId = courseId,
+            ResourceId = resourceId,
+            ActivityType = type,
+            Timestamp = DateTimeOffset.Now,
+            IpAddress = ip,
+            UserAgent = agent,
+            MetadataJson = meta != null ? JsonSerializer.Serialize(meta) : null
+        };
 
-    return View();
-}
+        await _activity.LogAsync(log);
+    }
 
-    [HttpGet]
-    public IActionResult MyCourses()
+    // ---------------------- DASHBOARD ------------------------
+    public async Task<IActionResult> Dashboard()
+    {
+        await LogAsync(ActivityType.Login);
+
+        var username = User.Identity?.Name;
+
+        var student = _dbContext.Students?
+            .Include(s => s.Enrollments!)
+            .ThenInclude(e => e.Course)
+            .FirstOrDefault(s => s.User!.Username == username);
+
+        int enrolledCount = student?.Enrollments?.Count ?? 0;
+        ViewBag.MyCoursesCount = enrolledCount;
+
+        return View();
+    }
+
+    // ---------------------- MY COURSES ------------------------
+    public async Task<IActionResult> MyCourses()
     {
         var username = User.Identity?.Name;
-        var student = _dbContext.Students
-            .Include(s => s.User)
+
+        var student = _dbContext.Students?
+            .Include(s => s.User!)
             .Include(s => s.Enrollments!)
                 .ThenInclude(e => e.Course)
             .FirstOrDefault(s => s.User!.Username == username);
 
         if (student == null)
-        {
-            TempData["ErrorMessage"] = "Unauthorized access.";
-            return RedirectToAction("Login", "Account");
-        }
+            return Unauthorized();
+
+        await LogAsync(ActivityType.ViewMaterial, null, null, new { Page = "MyCourses" });
 
         var courses = student.Enrollments!
             .Where(e => e.Course != null)
-            .Select(e => e.Course!)
+            .Select(e => e.Course)
             .ToList();
 
         return View(courses);
     }
-public IActionResult CourseDetails(int id)
-{
-    // Load course with related entities
-    var course = _dbContext.Courses
-            .Include(c => c.Assignments!)
-            .ThenInclude(a => a.Materials)
-            .Include(c => c.Enrollments!)
-            .ThenInclude(e => e.Student)
+
+    // ---------------------- COURSE DETAILS ------------------------
+    public async Task<IActionResult> CourseDetails(int id)
+    {
+        var course = _dbContext.Courses
+            .Include(c => c.Assignments!).ThenInclude(a => a.Materials)
+            .Include(c => c.Enrollments!).ThenInclude(e => e.Student)
             .Include(c => c.Materials)
-            .Include(c => c.ChatMessages!)
-            .ThenInclude(m => m.User) // include User to avoid lazy loading issues
-        .Include(c => c.LiveClasses)
-        .FirstOrDefault(c => c.Id == id);
+            .Include(c => c.ChatMessages!).ThenInclude(m => m.User)
+            .Include(c => c.LiveClasses)
+            .FirstOrDefault(c => c.Id == id);
 
-    if (course == null)
-        return NotFound();
+        if (course == null)
+            return NotFound();
 
-    // Get the current student
-    var username = User.Identity?.Name;
-    var student = _dbContext.Students
-        .Include(s => s.User)
-        .FirstOrDefault(s => s.User!.Username == username);
+        await LogAsync(ActivityType.ViewMaterial, id.ToString(), null);
 
-    if (student == null)
-        return Unauthorized();
+        var username = User.Identity?.Name;
+        var student = _dbContext.Students
+            .Include(s => s.User)
+            .FirstOrDefault(s => s.User!.Username == username);
 
-    // Load student submissions for this course
-    var submissions = _dbContext.AssignmentSubmissions
-        .Include(s => s.Assignment)
-        .Where(s => s.StudentId == student.Id && s.Assignment!.CourseId == id)
-        .ToList();
+        if (student == null)
+            return Unauthorized();
 
-    // Update LiveClass status dynamically
-    foreach (var liveClass in course.LiveClasses!)
-    {
-        if (DateTime.Now >= liveClass.StartTime && DateTime.Now <= liveClass.EndTime)
+        var submissions = _dbContext.AssignmentSubmissions
+            .Include(s => s.Assignment)
+            .Where(s => s.StudentId == student.Id && s.Assignment!.CourseId == id)
+            .ToList();
+
+        // Live class status update
+        foreach (var liveClass in course.LiveClasses!)
         {
-            liveClass.IsLive = true;
-            liveClass.IsCompleted = false;
+            if (DateTime.Now >= liveClass.StartTime &&
+                DateTime.Now <= liveClass.EndTime)
+            {
+                liveClass.IsLive = true;
+                liveClass.IsCompleted = false;
+            }
+            else if (DateTime.Now > liveClass.EndTime)
+            {
+                liveClass.IsLive = false;
+                liveClass.IsCompleted = true;
+            }
         }
-        else if (DateTime.Now > liveClass.EndTime)
-        {
-            liveClass.IsLive = false;
-            liveClass.IsCompleted = true;
-        }
-        else
-        {
-            liveClass.IsLive = false;
-            liveClass.IsCompleted = false; // upcoming
-        }
+
+        // Chat messages sorted
+        ViewBag.ChatMessages = _dbContext.ChatMessages
+            .Include(m => m.User)
+            .Where(m => m.CourseId == id)
+            .OrderBy(m => m.SentAt)
+            .ToList();
+
+        ViewBag.CurrentStudentId = student.Id;
+        ViewBag.Submissions = submissions;
+
+        return View(course);
     }
 
-    // Get chat messages sorted by time
-  var chatMessages = _dbContext.ChatMessages
-    .Include(m => m.User)
-    .Where(m => m.CourseId == id)
-    .OrderBy(m => m.SentAt)
-    .ToList();
-
-ViewBag.ChatMessages = chatMessages;
-
-
-    // Pass data to ViewBag
-    ViewBag.CurrentStudentId = student.Id;
-    ViewBag.Submissions = submissions;
-
-    return View(course);
-}
-
-
-
-public IActionResult JoinLiveClass(int id)
-{
-    var liveClass = _dbContext.LiveClasses
-        .Include(l => l.Course)
-        .FirstOrDefault(l => l.Id == id);
-
-    if (liveClass == null)
-        return NotFound();
-
-    // Optional: restrict joining only if current time is within the schedule
-    if (DateTime.Now < liveClass.StartTime || DateTime.Now > liveClass.EndTime)
+    // ---------------------- VIEW MATERIAL ------------------------
+    public async Task<IActionResult> ViewMaterial(int id)
     {
-        TempData["Error"] = "Live class is not currently active.";
-        return RedirectToAction("CourseDetails", new { id = liveClass.CourseId });
+        var material = _dbContext.Materials
+            .Include(m => m.Course)
+            .FirstOrDefault(m => m.Id == id);
+
+        if (material == null)
+            return NotFound();
+
+        await LogAsync(ActivityType.ViewMaterial, material.CourseId.ToString(), id.ToString());
+
+        return View(material);
     }
 
-    return View("JoinLiveClass", liveClass); // Uses Views/Student/JoinLiveClass.cshtml
-}
+    // ---------------------- DOWNLOAD MATERIAL ------------------------
+    public async Task<IActionResult> DownloadMaterial(int id)
+    {
+        var material = _dbContext.Materials
+            .FirstOrDefault(m => m.Id == id);
 
+        if (material == null)
+            return NotFound();
 
-public IActionResult LeaveLiveClass(int id)
-{
-    var liveClass = _dbContext.LiveClasses.FirstOrDefault(l => l.Id == id);
-    if (liveClass == null)
-        return NotFound();
+        await LogAsync(ActivityType.DownloadMaterial, material.CourseId.ToString(), id.ToString());
 
-    // Simply redirecting back to CourseDetails (tab=liveclass)
-    return RedirectToAction("CourseDetails", new { id = liveClass.CourseId, tab = "live-classes" });
-}
+        var path = Path.Combine(_webHostEnvironment.WebRootPath, material.FilePath!);
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(path);
 
+        return File(fileBytes, "application/octet-stream", Path.GetFileName(path));
+    }
 
+    // ---------------------- JOIN LIVE CLASS ------------------------
+    public async Task<IActionResult> JoinLiveClass(int id)
+    {
+        var liveClass = _dbContext.LiveClasses
+            .Include(l => l.Course)
+            .FirstOrDefault(l => l.Id == id);
 
+        if (liveClass == null)
+            return NotFound();
 
+        await LogAsync(ActivityType.JoinLiveClass, liveClass.CourseId.ToString(), id.ToString());
+
+        return View("JoinLiveClass", liveClass);
+    }
+
+    // ---------------------- LEAVE LIVE CLASS ------------------------
+    public async Task<IActionResult> LeaveLiveClass(int id)
+    {
+        var liveClass = _dbContext.LiveClasses.FirstOrDefault(l => l.Id == id);
+        if (liveClass == null)
+            return NotFound();
+
+        await LogAsync(ActivityType.LeaveLiveClass, liveClass.CourseId.ToString(), id.ToString());
+
+        return RedirectToAction("CourseDetails", new { id = liveClass.CourseId, tab = "live-classes" });
+    }
+
+    // ---------------------- START ASSIGNMENT ------------------------
+    public async Task<IActionResult> StartAssignment(int id)
+    {
+        var assign = _dbContext.Assignments
+            .Include(a => a.Course)
+            .FirstOrDefault(a => a.Id == id);
+
+        if (assign == null)
+            return NotFound();
+
+        await LogAsync(ActivityType.StartAssignment, assign.CourseId.ToString(), id.ToString());
+
+        return View(assign);
+    }
+
+    // ---------------------- SUBMIT ASSIGNMENT ------------------------
     [HttpPost]
-public async Task<IActionResult> SubmitAssignment(int AssignmentId, IFormFile SubmissionFile, string AnswerText)
-{
-    var username = User.Identity?.Name;
-    var student = _dbContext.Students
-        .Include(s => s.User)
-        .FirstOrDefault(s => s.User!.Username == username);
-
-    if (student == null)
+    public async Task<IActionResult> SubmitAssignment(int AssignmentId, IFormFile SubmissionFile, string AnswerText)
     {
-        TempData["ErrorAssignment"] = "Unauthorized access.";
-        return RedirectToAction("Login", "Account");
-    }
+        var username = User.Identity?.Name;
+        var student = _dbContext.Students
+            .Include(s => s.User)
+            .FirstOrDefault(s => s.User!.Username == username);
 
-    // Validate file
-    if (SubmissionFile == null || SubmissionFile.Length == 0)
-    {
-        TempData["ErrorAssignment"] = "Please upload a valid file.";
-        var fallbackCourseId = _dbContext.Assignments
+        if (student == null)
+            return Unauthorized();
+
+        if (SubmissionFile == null)
+        {
+            TempData["ErrorAssignment"] = "Please upload a valid file.";
+        }
+
+        try
+        {
+            var folder = Path.Combine(_webHostEnvironment.WebRootPath, "submissions");
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+
+            var fileName = Guid.NewGuid() + Path.GetExtension(SubmissionFile!.FileName);
+            var savePath = Path.Combine(folder, fileName);
+
+            using (var stream = new FileStream(savePath, FileMode.Create))
+            {
+                await SubmissionFile.CopyToAsync(stream);
+            }
+
+            var relativePath = Path.Combine("submissions", fileName);
+
+            var submission = new AssignmentSubmission
+            {
+                AssignmentId = AssignmentId,
+                StudentId = student.Id,
+                SubmittedAt = DateTime.Now,
+                FilePath = relativePath.Replace("\\", "/"),
+                AnswerText = AnswerText
+            };
+
+            _dbContext.AssignmentSubmissions.Add(submission);
+            await _dbContext.SaveChangesAsync();
+
+            await LogAsync(ActivityType.SubmitAssignment, submission.AssignmentId.ToString(), submission.Id.ToString());
+
+            TempData["SuccessAssignment"] = "Assignment submitted!";
+        }
+        catch (Exception)
+        {
+            TempData["ErrorAssignment"] = "Submission failed!";
+        }
+
+        var courseId = _dbContext.Assignments
             .Where(a => a.Id == AssignmentId)
             .Select(a => a.CourseId)
             .FirstOrDefault();
 
-        return RedirectToAction("CourseDetails", new { id = fallbackCourseId, tab = "assignments" });
+        return RedirectToAction("CourseDetails", new { id = courseId, tab = "assignments" });
     }
 
-    try
-    {
-        // Prepare upload path
-        var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "submissions");
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
-
-        var uniqueFileName = Guid.NewGuid() + Path.GetExtension(SubmissionFile.FileName);
-        var savePath = Path.Combine(uploadsFolder, uniqueFileName);
-        var relativePath = Path.Combine("submissions", uniqueFileName); // store in DB
-
-        // Save file
-        using (var stream = new FileStream(savePath, FileMode.Create))
-        {
-            await SubmissionFile.CopyToAsync(stream);
-        }
-
-        // Save submission
-        var submission = new AssignmentSubmission
-        {
-            AssignmentId = AssignmentId,
-            StudentId = student.Id,
-            SubmittedAt = DateTime.Now,
-            FilePath = relativePath.Replace("\\", "/"), // for cross-platform path
-            AnswerText = AnswerText,
-            MarksObtained = null,
-            IsPassed = null,
-            Feedback = null
-        };
-
-        _dbContext.AssignmentSubmissions.Add(submission);
-        await _dbContext.SaveChangesAsync();
-
-        TempData["SuccessAssignment"] = "Assignment submitted successfully!";
-    }
-    catch (Exception ex)
-    {
-        TempData["ErrorAssignment"] = "Something went wrong during submission." + ex.Message;
-        // Optionally log ex.Message
-    }
-
-    var courseId = _dbContext.Assignments
-        .Where(a => a.Id == AssignmentId)
-        .Select(a => a.CourseId)
-        .FirstOrDefault();
-
-    return RedirectToAction("CourseDetails", new { id = courseId, tab = "assignments" });
-}
-
-
-    [HttpGet]
+    // ---------------------- MY SUBMISSIONS ------------------------
     public IActionResult MySubmissions()
     {
         var username = User.Identity?.Name;
-        if (string.IsNullOrEmpty(username))
-            return Unauthorized();
 
         var student = _dbContext.Students
             .FirstOrDefault(s => s.User!.Username == username);
