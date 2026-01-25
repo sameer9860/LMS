@@ -1038,9 +1038,60 @@ public class InstructorController : Controller
         var liveClassDict = liveClasses.ToDictionary(l => l.Id.ToString(), l => l.Title);
 
 
-        // Filter to ONLY students and map data
-        filter.Logs = logs
-            .Where(l => l.UserId != null && studentDict.ContainsKey(l.UserId)) // Must be in studentDict
+        // Filter to ONLY students
+        var rawLogs = logs
+            .Where(l => l.UserId != null && studentDict.ContainsKey(l.UserId))
+            .OrderBy(l => l.UserId)
+            .ThenByDescending(l => l.Timestamp)
+            .ToList();
+
+        // Deduplicate logs within 5 seconds for same user and activity
+        var distinctLogs = new List<ActivityLog>();
+        if (rawLogs.Any())
+        {
+            var currentGroup = new List<ActivityLog> { rawLogs[0] };
+            
+            for (int i = 1; i < rawLogs.Count; i++)
+            {
+                var prev = rawLogs[i - 1];
+                var curr = rawLogs[i];
+
+                bool sameUser = curr.UserId == prev.UserId;
+                bool sameActivity = curr.ActivityType == prev.ActivityType;
+                double secondsDiff = (prev.Timestamp - curr.Timestamp).TotalSeconds; // prev is newer or same due to sorting
+
+                if (sameUser && sameActivity && secondsDiff <= 5)
+                {
+                    currentGroup.Add(curr);
+                }
+                else
+                {
+                    // Process previous group and pick best candidate
+                    // Prefer logs with ResourceId or CourseId over empty ones
+                    var bestLog = currentGroup
+                        .OrderByDescending(l => !string.IsNullOrEmpty(l.ResourceId))
+                        .ThenByDescending(l => !string.IsNullOrEmpty(l.CourseId))
+                        .First();
+                    distinctLogs.Add(bestLog);
+
+                    // Start new group
+                    currentGroup = new List<ActivityLog> { curr };
+                }
+            }
+            // Add last group
+            if (currentGroup.Any())
+            {
+                var bestLog = currentGroup
+                    .OrderByDescending(l => !string.IsNullOrEmpty(l.ResourceId))
+                    .ThenByDescending(l => !string.IsNullOrEmpty(l.CourseId))
+                    .First();
+                distinctLogs.Add(bestLog);
+            }
+        }
+
+        // Map Final Display Items
+        filter.Logs = distinctLogs
+            .OrderByDescending(l => l.Timestamp)
             .Select(l => {
                 // Handle generic page views that were logged as "ViewMaterial"
                 string resourceTitle = "-";
