@@ -59,41 +59,42 @@
         </ol>
     </nav>
 
-    <ul class="nav nav-tabs mb-3" id="courseTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
-                <span class="badge bg-primary"><i class="fas fa-info-circle me-1"></i>Course</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab">
-                <span class="badge bg-success"><i class="fas fa-users me-1"></i>Participants</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
-                <span class="badge bg-info"><i class="fas fa-folder-open me-1"></i>Materials</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
-                <span class="badge bg-warning text-dark"><i class="fas fa-video me-1"></i>Live Classes</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
-                <span class="badge bg-info text-dark"><i class="fas fa-comments me-1"></i>Chat</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link @(activeTab == "assignments" ? "active" : "")" id="assignments-tab"
-                    data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
-                <span class="badge bg-warning text-dark">
-                    <i class="fas fa-tasks me-1"></i>Assignments
-                </span>
-            </button>
-        </li>
-    </ul>
+    <!-- Scrollable Tabs on Mobile -->
+    <div class="overflow-auto mb-3">
+        <ul class="nav nav-pills flex-nowrap" id="courseTab" role="tablist">
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap active" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
+                    <i class="fas fa-info-circle me-1"></i> Course
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab">
+                    <i class="fas fa-users me-1"></i> Participants
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
+                    <i class="fas fa-folder-open me-1"></i> Materials
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
+                    <i class="fas fa-video me-1"></i> Live Classes
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
+                    <i class="fas fa-comments me-1"></i> Chat
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link text-nowrap @(activeTab == "assignments" ? "active" : "")" id="assignments-tab"
+                        data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+                    <i class="fas fa-tasks me-1"></i> Assignments
+                </button>
+            </li>
+        </ul>
+    </div>
 
     <div class="tab-content" id="courseTabContent">
         <!-- Course Info Tab -->
@@ -117,38 +118,40 @@
             <h5>Enrolled Students</h5>
             @if (Model.Enrollments != null && Model.Enrollments.Any())
             {
-                <table class="table table-striped table-bordered align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>S.N.</th>
-                            <th>Full Name</th>
-                            <th>Date of Birth</th>
-                            <th>Guardian Name</th>
-                            <th>Grade</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            int sn = 1;
-                            foreach (var enrollment in Model.Enrollments)
-                            {
-                                var s = enrollment.Student;
-                                <tr>
-                                    <td>@sn</td>
-                                    <td>@s?.FirstName @s?.LastName</td>
-                                    <td>@s?.DateOfBirth.ToShortDateString()</td>
-                                    <td>@s?.GuardianName</td>
-                                    <td>@s?.Grade</td>
-                                    <td>@s?.Email</td>
-                                    <td>@s?.PhoneNumber</td>
-                                </tr>
-                                sn++;
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-nowrap">S.N.</th>
+                                <th class="text-nowrap">Full Name</th>
+                                <th class="text-nowrap">Date of Birth</th>
+                                <th class="text-nowrap">Guardian Name</th>
+                                <th class="text-nowrap">Grade</th>
+                                <th class="text-nowrap">Email</th>
+                                <th class="text-nowrap">Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int sn = 1;
+                                foreach (var enrollment in Model.Enrollments)
+                                {
+                                    var s = enrollment.Student;
+                                    <tr>
+                                        <td>@sn</td>
+                                        <td>@s?.FirstName @s?.LastName</td>
+                                        <td>@s?.DateOfBirth.ToShortDateString()</td>
+                                        <td>@s?.GuardianName</td>
+                                        <td>@s?.Grade</td>
+                                        <td>@s?.Email</td>
+                                        <td>@s?.PhoneNumber</td>
+                                    </tr>
+                                    sn++;
+                                }
                             }
-                        }
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             }
             else
             {

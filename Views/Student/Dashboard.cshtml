@@ -4,17 +4,34 @@
 }
 
 <div class="row g-4 mt-3">
-    <div class="col-md-4">
-        <a href="@Url.Action("MyCourses", "Student")" class="text-decoration-none text-dark">
-            <div class="card shadow border-0 text-center h-100" style="background-color: #e0f7fa;">
-                <div class="card-body">
-                    <i class="fas fa-book fa-2x mb-3 text-primary"></i>
-                    <h5 class="card-title">My Courses</h5>
-                    <p class="display-6 fw-bold">@myCoursesCount</p>
-                    <p class="text-muted">Total Enrolled Courses</p>
+    <div class="col-12 col-md-4">
+        <a href="@Url.Action("MyCourses", "Student")" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100 hover-lift" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white;">
+                <div class="card-body p-4 d-flex flex-column justify-content-center align-items-center text-center">
+                    <div class="mb-3 p-3 rounded-circle bg-white bg-opacity-25">
+                        <i class="fas fa-book-open fa-2x"></i>
+                    </div>
+                    <h5 class="card-title mb-0 text-uppercase letter-spacing-1 small fw-bold opacity-75">My Courses</h5>
+                    <span class="display-4 fw-bold my-2">@myCoursesCount</span>
+                    <span class="badge bg-white text-primary rounded-pill px-3">View All</span>
                 </div>
             </div>
         </a>
+    </div>
+    
+    <!-- Placeholder for more student stats (e.g. Assignments Pending) -->
+    <div class="col-12 col-md-4">
+        <div class="card shadow-sm border-0 h-100 hover-lift" style="background: white;">
+             <div class="card-body p-4 d-flex align-items-center">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3 text-warning">
+                    <i class="fas fa-clock fa-2x"></i>
+                </div>
+                <div>
+                     <h6 class="text-muted text-uppercase small fw-bold mb-1">Upcoming Deadlines</h6>
+                     <span class="h5 fw-bold text-dark">Check Calendar</span>
+                </div>
+             </div>
+        </div>
     </div>
 </div>
 
