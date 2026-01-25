@@ -672,7 +672,7 @@ public class InstructorController : Controller
 
             assignment.Materials.Add(new Material
             {
-                Title = model.File.FileName,
+                Title = model.Title, // Use Assignment Title instead of FileName
                 Description = "Assignment Attachment",
                 FilePath = relativePath,
                 FileType = model.File.ContentType,
@@ -1015,6 +1015,17 @@ public class InstructorController : Controller
         var materials = await _dbContext.Materials.Where(m => matIdsInt.Contains(m.Id)).Select(m => new { m.Id, m.Title }).ToListAsync();
         var materialDict = materials.ToDictionary(m => m.Id.ToString(), m => m.Title);
 
+        // 1b. Check if these materials belong to an assignment (to show Assignment Title instead of filename)
+        var assignmentMaterialMap = await _dbContext.Assignments
+            .Where(a => a.Materials.Any(m => matIdsInt.Contains(m.Id)))
+            .SelectMany(a => a.Materials.Where(m => matIdsInt.Contains(m.Id))
+                                        .Select(m => new { MaterialId = m.Id, AssignmentTitle = a.Title }))
+            .ToListAsync();
+
+        var matToAssignTitle = assignmentMaterialMap
+            .GroupBy(x => x.MaterialId) // Handle edge case if material linked to multiple assignments (unlikely but safe)
+            .ToDictionary(g => g.Key.ToString(), g => g.First().AssignmentTitle);
+
         // 2. Assignments
         var assignmentIds = logs
             .Where(l => !string.IsNullOrEmpty(l.ResourceId) && 
@@ -1105,7 +1116,17 @@ public class InstructorController : Controller
                 else if (!string.IsNullOrEmpty(l.ResourceId))
                 {
                     if (l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial)
-                        resourceTitle = materialDict.ContainsKey(l.ResourceId) ? materialDict[l.ResourceId] : "Unknown Material";
+                    {
+                        // PREFER Assignment Title if this material is part of an assignment
+                        if (matToAssignTitle.ContainsKey(l.ResourceId))
+                        {
+                            resourceTitle = matToAssignTitle[l.ResourceId];
+                        }
+                        else
+                        {
+                            resourceTitle = materialDict.ContainsKey(l.ResourceId) ? materialDict[l.ResourceId] : "Unknown Material";
+                        }
+                    }
                     else if (l.ActivityType == ActivityType.StartAssignment || l.ActivityType == ActivityType.SubmitAssignment)
                         resourceTitle = assignmentDict.ContainsKey(l.ResourceId) ? assignmentDict[l.ResourceId] : "Unknown Assignment";
                     else if (l.ActivityType == ActivityType.JoinLiveClass || l.ActivityType == ActivityType.LeaveLiveClass)
@@ -1144,15 +1165,63 @@ public class InstructorController : Controller
             .Where(s => s.User != null && !string.IsNullOrEmpty(s.User.Username))
             .Select(s => s.User!.Username)
             .ToListAsync();
-            
+
         // Get activity stats for the last 30 days ONLY for students (ActivityLog.UserId == Username)
-        var data = await _dbContext.ActivityLogs
-            .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) && 
-                        l.UserId != null && 
+        var logs = await _dbContext.ActivityLogs
+            .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) &&
+                        l.UserId != null &&
                         studentUsernames.Contains(l.UserId))
+            .OrderBy(l => l.UserId)
+            .ThenByDescending(l => l.Timestamp)
+            .ToListAsync();
+
+        // Deduplicate logs within 5 seconds for same user and activity
+        var distinctLogs = new List<ActivityLog>();
+        if (logs.Any())
+        {
+            var currentGroup = new List<ActivityLog> { logs[0] };
+
+            for (int i = 1; i < logs.Count; i++)
+            {
+                var prev = logs[i - 1];
+                var curr = logs[i];
+
+                bool sameUser = curr.UserId == prev.UserId;
+                bool sameActivity = curr.ActivityType == prev.ActivityType;
+                double secondsDiff = (prev.Timestamp - curr.Timestamp).TotalSeconds; // prev is newer or same due to sorting
+
+                if (sameUser && sameActivity && secondsDiff <= 5)
+                {
+                    currentGroup.Add(curr);
+                }
+                else
+                {
+                    // Add best from previous group
+                    var bestLog = currentGroup
+                        .OrderByDescending(l => !string.IsNullOrEmpty(l.ResourceId))
+                        .ThenByDescending(l => !string.IsNullOrEmpty(l.CourseId))
+                        .First();
+                    distinctLogs.Add(bestLog);
+
+                    // Start new group
+                    currentGroup = new List<ActivityLog> { curr };
+                }
+            }
+            // Add last group
+            if (currentGroup.Any())
+            {
+                var bestLog = currentGroup
+                    .OrderByDescending(l => !string.IsNullOrEmpty(l.ResourceId))
+                    .ThenByDescending(l => !string.IsNullOrEmpty(l.CourseId))
+                    .First();
+                distinctLogs.Add(bestLog);
+            }
+        }
+
+        var data = distinctLogs
             .GroupBy(l => l.ActivityType)
             .Select(g => new { label = g.Key.ToString(), count = g.Count() })
-            .ToListAsync();
+            .ToList();
 
         return Json(data);
     }
