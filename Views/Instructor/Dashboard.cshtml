@@ -45,34 +45,31 @@
         </div>
     </div>
 
-    <!-- Calendar Card -->
-    <div class="row justify-content-center mt-4">
-        <div class="col-md-8">
-            <div class="card shadow border-0">
+    <!-- Calendar and Activity Chart -->
+    <div class="row mt-4">
+        <!-- Calendar -->
+        <div class="col-md-6">
+            <div class="card shadow border-0 h-100">
                 <div class="card-body">
-
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <button id="prevMonth" class="btn btn-outline-secondary btn-sm">
-                            <i class="fa fa-chevron-left"></i> Prev
+                            <i class="fa fa-chevron-left"></i>
                         </button>
-
-                        <h5 id="calendarMonthYear" class="mb-0 fw-semibold" style="font-size:1.25rem;"></h5>
-
+                        <h5 id="calendarMonthYear" class="mb-0 fw-semibold"></h5>
                         <button id="nextMonth" class="btn btn-outline-secondary btn-sm">
-                            Next <i class="fa fa-chevron-right"></i>
+                            <i class="fa fa-chevron-right"></i>
                         </button>
                     </div>
-
-                    <table class="table table-bordered text-center mb-0" style="font-size:0.95rem; table-layout: fixed;">
+                    <table class="table table-bordered text-center mb-0" style="font-size:0.9rem; table-layout: fixed;">
                         <thead class="table-light">
                             <tr>
-                                <th style="color:#ef4444; width:14.28%;">Sun</th>
-                                <th style="width:14.28%;">Mon</th>
-                                <th style="width:14.28%;">Tue</th>
-                                <th style="width:14.28%;">Wed</th>
-                                <th style="width:14.28%;">Thu</th>
-                                <th style="width:14.28%;">Fri</th>
-                                <th style="color:#2563eb; width:14.28%;">Sat</th>
+                                <th class="text-danger">S</th>
+                                <th>M</th>
+                                <th>T</th>
+                                <th>W</th>
+                                <th>T</th>
+                                <th>F</th>
+                                <th class="text-primary">S</th>
                             </tr>
                         </thead>
                         <tbody id="calendarBody"></tbody>
@@ -80,11 +77,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Activity Chart -->
+        <div class="col-md-6">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4">Student Activity (Last 30 Days)</h5>
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // --- Calendar Logic ---
     const calendarBody      = document.getElementById('calendarBody');
     const calendarMonthYear = document.getElementById('calendarMonthYear');
     const btnPrev           = document.getElementById('prevMonth');
@@ -98,41 +107,28 @@
         const firstDayIndex = new Date(year, month, 1).getDay();
         const daysInMonth   = new Date(year, month + 1, 0).getDate();
 
-        calendarMonthYear.innerText =
-            date.toLocaleString('default', { month: 'long', year: 'numeric' });
+        calendarMonthYear.innerText = date.toLocaleString('default', { month: 'long', year: 'numeric' });
 
         calendarBody.innerHTML = '';
         let dayCounter = 1;
 
         for (let row = 0; row < 6; row++) {
             const tr = document.createElement('tr');
-
             for (let col = 0; col < 7; col++) {
                 const td = document.createElement('td');
-
-                if (row === 0 && col < firstDayIndex) {
-                    td.innerHTML = '&nbsp;';
-                } else if (dayCounter > daysInMonth) {
+                if ((row === 0 && col < firstDayIndex) || dayCounter > daysInMonth) {
                     td.innerHTML = '&nbsp;';
                 } else {
                     td.textContent = dayCounter;
-
                     const today = new Date();
-                    if (
-                        dayCounter === today.getDate() &&
-                        month      === today.getMonth() &&
-                        year       === today.getFullYear()
-                    ) {
+                    if (dayCounter === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                         td.classList.add('bg-primary', 'text-white', 'rounded-circle');
                     }
-
                     dayCounter++;
                 }
                 tr.appendChild(td);
             }
-
             calendarBody.appendChild(tr);
-
             if (dayCounter > daysInMonth) break;
         }
     }
@@ -148,5 +144,42 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => generateCalendar(currentDate));
+
+    // --- Chart Logic ---
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('/Instructor/GetActivityChartData')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('activityChart').getContext('2d');
+                const labels = data.map(item => item.label);
+                const counts = data.map(item => item.count);
+                
+                // Generate colors dynamically or use a preset
+                const colors = [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                ];
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors.slice(0, labels.length),
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching chart data:', error));
+    });
 </script>
 }

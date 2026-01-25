@@ -1,3 +1,9 @@
+public class ActivityLogDisplayItem : ActivityLog
+{
+    public string? StudentName { get; set; }
+    public string? CourseName { get; set; }
+}
+
 public class ActivityLogFilterViewModel
 {
     public string? StudentId { get; set; }
@@ -6,5 +12,5 @@ public class ActivityLogFilterViewModel
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
 
-    public List<ActivityLog>? Logs { get; set; }
+    public List<ActivityLogDisplayItem>? Logs { get; set; }
 }

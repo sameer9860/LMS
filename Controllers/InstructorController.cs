@@ -937,37 +937,115 @@ public class InstructorController : Controller
         return View("JoinLiveClass", liveClass); // You can update this view to launch the meeting.
     }
 
-[Authorize(Roles = "Instructor")]
-public async Task<IActionResult> ActivityLogs(ActivityLogFilterViewModel filter)
-{
-    var query = _dbContext.ActivityLogs.AsQueryable();
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> ActivityLogs(ActivityLogFilterViewModel filter)
+    {
+        var query = _dbContext.ActivityLogs.AsQueryable();
 
-    // Filter by student
-    if (!string.IsNullOrEmpty(filter.StudentId))
-        query = query.Where(x => x.UserId == filter.StudentId);
+        // Filter by student
+        if (!string.IsNullOrEmpty(filter.StudentId))
+            query = query.Where(x => x.UserId == filter.StudentId);
 
-    // Filter by course
-    if (!string.IsNullOrEmpty(filter.CourseId))
-        query = query.Where(x => x.CourseId == filter.CourseId);
+        // Filter by course
+        if (!string.IsNullOrEmpty(filter.CourseId))
+            query = query.Where(x => x.CourseId == filter.CourseId);
 
-    // Filter by activity type
-    if (filter.ActivityType.HasValue)
-        query = query.Where(x => x.ActivityType == filter.ActivityType);
+        // Filter by activity type
+        if (filter.ActivityType.HasValue)
+            query = query.Where(x => x.ActivityType == filter.ActivityType);
 
-    // Filter by date range
-    if (filter.FromDate.HasValue)
-        query = query.Where(x => x.Timestamp >= filter.FromDate);
+        // Filter by date range
+        if (filter.FromDate.HasValue)
+            query = query.Where(x => x.Timestamp >= filter.FromDate);
 
-    if (filter.ToDate.HasValue)
-        query = query.Where(x => x.Timestamp <= filter.ToDate.Value.AddDays(1));
+        if (filter.ToDate.HasValue)
+            query = query.Where(x => x.Timestamp <= filter.ToDate.Value.AddDays(1));
 
-    // Order newest first
-    filter.Logs = await query
-        .OrderByDescending(x => x.Timestamp)
-        .ToListAsync();
+        // Order newest first
+        var logs = await query
+            .OrderByDescending(x => x.Timestamp)
+            .ToListAsync();
 
-    return View(filter);
-}
+        // Map UserIds to Names
+        var userIds = logs.Select(l => l.UserId).Distinct().ToList();
+        var userIdsInt = new List<int>();
+        foreach (var uid in userIds)
+        {
+            if (int.TryParse(uid, out int id)) userIdsInt.Add(id);
+        }
+
+        var students = await _dbContext.Students
+            .Where(s => userIdsInt.Contains(s.UserId))
+            .Select(s => new { s.UserId, Name = s.FirstName + " " + s.LastName })
+            .ToListAsync();
+
+        var studentDict = students.ToDictionary(s => s.UserId.ToString(), s => s.Name);
+
+        // Map CourseIds to Names
+        var courseIds = logs
+            .Where(l => !string.IsNullOrEmpty(l.CourseId))
+            .Select(l => l.CourseId)
+            .Distinct()
+            .ToList();
+            
+        var courseIdsInt = new List<int>();
+        foreach (var cid in courseIds)
+        {
+             if (int.TryParse(cid, out int id)) courseIdsInt.Add(id);
+        }
+
+        var courses = await _dbContext.Courses
+            .Where(c => courseIdsInt.Contains(c.Id))
+            .Select(c => new { c.Id, c.FullName })
+            .ToListAsync();
+
+        var courseDict = courses.ToDictionary(c => c.Id.ToString(), c => c.FullName);
+
+        // Filter to ONLY students and map data
+        filter.Logs = logs
+            .Where(l => l.UserId != null && studentDict.ContainsKey(l.UserId)) // Must be in studentDict
+            .Select(l => new ActivityLogDisplayItem
+            {
+                Id = l.Id,
+                UserId = l.UserId,
+                CourseId = l.CourseId,
+                ResourceId = l.ResourceId,
+                ActivityType = l.ActivityType,
+                Timestamp = l.Timestamp,
+                DurationSeconds = l.DurationSeconds,
+                IpAddress = l.IpAddress,
+                UserAgent = l.UserAgent,
+                MetadataJson = l.MetadataJson,
+                StudentName = studentDict[l.UserId!],
+                CourseName = (l.CourseId != null && courseDict.ContainsKey(l.CourseId)) 
+                             ? courseDict[l.CourseId] 
+                             : "-"
+            }).ToList();
+
+        return View(filter);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetActivityChartData()
+    {
+        // Get all student UserIds as strings
+        var studentUserIds = await _dbContext.Students
+            .Select(s => s.UserId)
+            .ToListAsync();
+            
+        var studentUserIdStrings = studentUserIds.Select(id => id.ToString()).ToList();
+
+        // Get activity stats for the last 30 days ONLY for students
+        var data = await _dbContext.ActivityLogs
+            .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) && 
+                        l.UserId != null && 
+                        studentUserIdStrings.Contains(l.UserId))
+            .GroupBy(l => l.ActivityType)
+            .Select(g => new { label = g.Key.ToString(), count = g.Count() })
+            .ToListAsync();
+
+        return Json(data);
+    }
 
 
 }
