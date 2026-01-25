@@ -1042,8 +1042,16 @@ public class InstructorController : Controller
         filter.Logs = logs
             .Where(l => l.UserId != null && studentDict.ContainsKey(l.UserId)) // Must be in studentDict
             .Select(l => {
+                // Handle generic page views that were logged as "ViewMaterial"
                 string resourceTitle = "-";
-                if (!string.IsNullOrEmpty(l.ResourceId))
+                if (string.IsNullOrEmpty(l.ResourceId) && l.ActivityType == ActivityType.ViewMaterial)
+                {
+                    if (string.IsNullOrEmpty(l.CourseId))
+                        resourceTitle = "My Courses (List)";
+                    else
+                        resourceTitle = "Course Dashboard";
+                }
+                else if (!string.IsNullOrEmpty(l.ResourceId))
                 {
                     if (l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial)
                         resourceTitle = materialDict.ContainsKey(l.ResourceId) ? materialDict[l.ResourceId] : "Unknown Material";
