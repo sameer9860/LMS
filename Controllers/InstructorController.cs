@@ -1255,5 +1255,26 @@ public class InstructorController : Controller
         return Json(data);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetCourseEnrollmentData()
+    {
+        var username = User.Identity?.Name;
+        if (string.IsNullOrEmpty(username)) return Json(new List<object>());
+
+        var instructor = await _dbContext.Instructors.FirstOrDefaultAsync(i => i.User != null && i.User.Username == username);
+        if (instructor == null) return Json(new List<object>());
+
+        var data = await _dbContext.Courses
+            .Where(c => c.Instructorid == instructor.id)
+            .Select(c => new 
+            { 
+                label = c.FullName, 
+                count = c.Enrollments != null ? c.Enrollments.Count() : 0 
+            })
+            .ToListAsync();
+
+        return Json(data);
+    }
+
 
 }
