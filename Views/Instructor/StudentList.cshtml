@@ -7,15 +7,16 @@
 
 <h2>Student List</h2>
 
-<table class="table table-bordered table-striped align-middle">
+<div class="table-responsive shadow-sm rounded">
+<table class="table table-bordered table-striped align-middle mb-0">
     <thead class="table-dark">
         <tr>
-            <th>S.N.</th>
-            <th>Full Name</th>
-            <th>Date of Birth</th>
-            <th>Guardian Name</th>
-            <th>Grade</th>
-            <th style="width: 140px;">Action</th>
+            <th class="text-nowrap">S.N.</th>
+            <th class="text-nowrap">Full Name</th>
+            <th class="text-nowrap">Date of Birth</th>
+            <th class="text-nowrap">Guardian Name</th>
+            <th class="text-nowrap">Grade</th>
+            <th class="text-nowrap" style="width: 140px;">Action</th>
         </tr>
     </thead>
     <tbody>
@@ -28,7 +29,7 @@
                 <td>@student.GuardianName</td>
                 <td>@student.Grade</td>
                 <td>
-                    <div class="d-flex gap-1">
+                    <div class="d-flex gap-1 justify-content-center">
                         <a asp-action="EditStudent" asp-route-id="@student.Id" class="btn btn-sm btn-outline-primary" title="Edit">
                             <i class="bi bi-pencil-square"></i>
                         </a>
@@ -49,6 +50,7 @@
         }
     </tbody>
 </table>
+</div>
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">

@@ -32,30 +32,30 @@
             </h2>
             <div id="collapsePersonal" class="accordion-collapse collapse show" data-bs-parent="#studentAccordion">
                 <div class="accordion-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
                             <label asp-for="FirstName" class="form-label"></label>
                             <input asp-for="FirstName" class="form-control" required />
                             <span asp-validation-for="FirstName" class="text-danger"></span>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <label asp-for="MiddleName" class="form-label"></label>
                             <input asp-for="MiddleName" class="form-control" />
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <label asp-for="LastName" class="form-label"></label>
                             <input asp-for="LastName" class="form-control" required />
                             <span asp-validation-for="LastName" class="text-danger"></span>
                         </div>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
                             <label asp-for="Email" class="form-label"></label>
                             <input asp-for="Email" type="email" class="form-control" required />
                             <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label asp-for="PhoneNumber" class="form-label"></label>
                             <input asp-for="PhoneNumber" class="form-control" required />
                             <span asp-validation-for="PhoneNumber" class="text-danger"></span>

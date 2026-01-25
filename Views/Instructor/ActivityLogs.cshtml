@@ -6,56 +6,69 @@
 
 <h2 class="mb-3">Student Activity Logs</h2>
 
-<form method="get" class="row g-3 mb-4">
-    <div class="col-md-3">
-        <label>Student ID</label>
-        <input type="text" class="form-control" name="StudentId" value="@Model.StudentId" />
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <i class="fas fa-filter me-2"></i> Filter Logs
     </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Student ID</label>
+                <input type="text" class="form-control form-control-sm" name="StudentId" value="@Model.StudentId" placeholder="e.g. user123" />
+            </div>
 
-    <div class="col-md-3">
-        <label>Course ID</label>
-        <input type="text" class="form-control" name="CourseId" value="@Model.CourseId" />
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Course ID</label>
+                <input type="text" class="form-control form-control-sm" name="CourseId" value="@Model.CourseId" placeholder="e.g. 101" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Activity Type</label>
+                <select class="form-select form-select-sm" name="ActivityType">
+                    <option value="">All Activities</option>
+                    @foreach (var type in Enum.GetValues(typeof(ActivityType)))
+                    {
+                        <option value="@type" selected="@(Model.ActivityType != null && Model.ActivityType.ToString() == type.ToString())">
+                            @type
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold">From</label>
+                        <input type="date" class="form-control form-control-sm" name="FromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold">To</label>
+                        <input type="date" class="form-control form-control-sm" name="ToDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end">
+                <button class="btn btn-primary btn-sm px-4">
+                    <i class="fas fa-search me-2"></i> Apply Filters
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div class="col-md-3">
-        <label>Activity Type</label>
-        <select class="form-control" name="ActivityType">
-            <option value="">All</option>
-            @foreach (var type in Enum.GetValues(typeof(ActivityType)))
-            {
-                <option value="@type" selected="@(Model.ActivityType != null && Model.ActivityType.ToString() == type.ToString())">
-                    @type
-                </option>
-            }
-        </select>
-    </div>
-
-    <div class="col-md-3">
-        <label>From</label>
-        <input type="date" class="form-control" name="FromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
-    </div>
-
-    <div class="col-md-3">
-        <label>To</label>
-        <input type="date" class="form-control" name="ToDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-    </div>
-
-    <div class="col-md-3 align-self-end">
-        <button class="btn btn-primary w-100">Filter</button>
-    </div>
-</form>
-
-<table class="table table-bordered table-striped">
+<div class="table-responsive shadow-sm rounded">
+<table class="table table-bordered table-striped table-hover align-middle mb-0">
     <thead class="table-dark">
         <tr>
-            <th>Timestamp</th>
-            <th>Student</th>
-            <th>Activity</th>
-            <th>Course</th>
-            <th>Resource</th>
-            <th>Duration (sec)</th>
-            <th>IP</th>
-            <th>UserAgent</th>
+            <th class="text-nowrap">Timestamp</th>
+            <th class="text-nowrap">Student</th>
+            <th class="text-nowrap">Activity</th>
+            <th class="text-nowrap">Course</th>
+            <th class="text-nowrap">Resource</th>
+            <th class="text-nowrap">Duration (sec)</th>
+            <th class="text-nowrap">IP</th>
+            <th class="text-nowrap">UserAgent</th>
         </tr>
     </thead>
 

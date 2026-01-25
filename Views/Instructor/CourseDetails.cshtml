@@ -30,61 +30,51 @@
     </nav>
 
     <!-- ✅ Bootstrap 5 Tab Pills -->
-    <ul class="nav nav-pills mb-3" id="courseTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button"
-                role="tab">
-                <i class="fas fa-info-circle"></i> Course
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants"
-                type="button" role="tab">
-                <i class="fas fa-users"></i> Participants
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button"
-                role="tab">
-                <span class="badge bg-info"></span><i class="fas fa-upload"></i> Materials
-            </button>
-        </li>
-        <li class="nav-item" role="presentation"></li>
-    <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
-      <i class="fas fa-comments me-1"></i>Chat</span>
-    </button>
-</li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments"
-                type="button" role="tab">
-                <i class="fas fa-tasks"></i> Assignments
-            </button>
-        </li>
-
-<li class="nav-item" role="presentation">
-    <button class="nav-link @(ViewContext.HttpContext.Request.Query["tab"] == "live-classes" ? "active" : "")"
-            id="live-classes-tab"
-            data-bs-toggle="tab"
-            data-bs-target="#live-classes"
-            type="button"
-            role="tab"
-            aria-controls="live-classes"
-            aria-selected="@(ViewContext.HttpContext.Request.Query["tab"] == "live-classes" ? "true" : "false")">
-        <i class="fas fa-video me-2"></i> Live Classes
-        @if (Model.LiveClasses?.Count > 0)
-        {
-            <span class="badge bg-primary ms-2">@Model.LiveClasses.Count</span>
-        }
-    </button>
-</li>
-
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="editcourse-tab" data-bs-toggle="tab" data-bs-target="#editcourse"
-                type="button" role="tab">
-                <i class="fas fa-edit"></i> Edit Course
-            </button>
-        </li>
-    </ul>
+    <!-- ✅ Bootstrap 5 Tab Pills (Scrollable on Mobile) -->
+    <div class="overflow-auto mb-3">
+        <ul class="nav nav-pills flex-nowrap" id="courseTab" role="tablist">
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
+                    <i class="fas fa-info-circle me-1"></i> Course
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab">
+                    <i class="fas fa-users me-1"></i> Participants
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
+                    <i class="fas fa-upload me-1"></i> Materials
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
+                    <i class="fas fa-comments me-1"></i> Chat
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+                    <i class="fas fa-tasks me-1"></i> Assignments
+                </button>
+            </li>
+            <li class="nav-item me-1" role="presentation">
+                <button class="nav-link text-nowrap @(ViewContext.HttpContext.Request.Query["tab"] == "live-classes" ? "active" : "")"
+                        id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
+                    <i class="fas fa-video me-1"></i> Live Classes
+                    @if (Model.LiveClasses?.Count > 0)
+                    {
+                        <span class="badge bg-light text-dark ms-1 rounded-pill">@Model.LiveClasses.Count</span>
+                    }
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link text-nowrap" id="editcourse-tab" data-bs-toggle="tab" data-bs-target="#editcourse" type="button" role="tab">
+                    <i class="fas fa-edit me-1"></i> Edit
+                </button>
+            </li>
+        </ul>
+    </div>
 
     <div class="tab-content" id="courseTabContent">
 
@@ -132,14 +122,14 @@
             {
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped align-middle text-center">
-                        <thead class="table-primary">
+                        <thead class="table-light">
                             <tr>
-                                <th>S.N.</th>
-                                <th>Full Name</th>
-                                <th>Date of Birth</th>
-                                <th>Guardian Name</th>
-                                <th>Grade</th>
-                                <th>Action</th>
+                                <th class="text-nowrap">S.N.</th>
+                                <th class="text-nowrap">Full Name</th>
+                                <th class="text-nowrap">Date of Birth</th>
+                                <th class="text-nowrap">Guardian Name</th>
+                                <th class="text-nowrap">Grade</th>
+                                <th class="text-nowrap">Action</th>
                             </tr>
                         </thead>
                         <tbody>

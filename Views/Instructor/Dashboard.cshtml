@@ -13,37 +13,54 @@
 <div class="container mt-4">
     <div class="row g-4">
         <!-- Stats Cards -->
-       <div class="col-md-4">
-    <a href="@Url.Action("Course", "Instructor")" style="text-decoration:none;">
-        <div class="card shadow border-0 text-center" style="background: #2563eb; color: #fff; cursor:pointer;">
-            <div class="card-body py-4">
-                <i class="fas fa-book fa-2x mb-3"></i>
-                <h6 class="card-title mb-2" style="font-size: 1.05rem;">Total Courses</h6>
-                <span class="fw-bold" style="font-size: 2rem;">@ViewBag.TotalCourses</span>
-            </div>
+        <div class="col-12 col-md-4">
+            <a href="@Url.Action("Course", "Instructor")" style="text-decoration:none;">
+                <div class="card shadow-sm border-0 text-center h-100 hover-lift" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff;">
+                    <div class="card-body py-4 d-flex flex-column justify-content-center align-items-center">
+                        <i class="fas fa-book fa-3x mb-3 opacity-75"></i>
+                        <h6 class="card-title mb-1 text-uppercase letter-spacing-1">Total Courses</h6>
+                        <span class="fw-bold display-5">@ViewBag.TotalCourses</span>
+                    </div>
+                </div>
+            </a>
         </div>
-    </a>
-</div>
 
-        <div class="col-md-4">
-            <div class="card shadow border-0 text-center" style="background: #ef4444; color: #fff;">
-                <div class="card-body py-4">
-                    <i class="fas fa-users fa-2x mb-3"></i>
-                    <h6 class="card-title mb-2" style="font-size: 1.05rem;">Total Enrolled Students</h6>
-                    <span class="fw-bold" style="font-size: 2rem;">@ViewBag.TotalEnrolledStudents</span>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 text-center h-100 hover-lift" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff;">
+                <div class="card-body py-4 d-flex flex-column justify-content-center align-items-center">
+                    <i class="fas fa-users fa-3x mb-3 opacity-75"></i>
+                    <h6 class="card-title mb-1 text-uppercase letter-spacing-1">Total Students</h6>
+                    <span class="fw-bold display-5">@ViewBag.TotalEnrolledStudents</span>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow border-0 text-center" style="background: #f0f4fa;">
-                <div class="card-body py-4">
-                    <i class="fas fa-calendar-alt fa-2x mb-3 text-primary"></i>
-                    <h6 class="card-title mb-2" style="font-size: 1.05rem;">Today</h6>
-                    <span class="fw-bold" style="font-size: 1.2rem; color: #2563eb;">@today</span>
+
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 text-center h-100 hover-lift" style="background: #f8fafc;">
+                <div class="card-body py-4 d-flex flex-column justify-content-center align-items-center">
+                    <i class="fas fa-calendar-alt fa-3x mb-3 text-primary"></i>
+                    <h6 class="card-title mb-1 text-muted text-uppercase letter-spacing-1">Today's Date</h6>
+                    <span class="fw-bold h4 text-dark mb-0">@today</span>
                 </div>
             </div>
         </div>
     </div>
+
+    <style>
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+        .letter-spacing-1 {
+            letter-spacing: 1px;
+        }
+        .opacity-75 {
+            opacity: 0.75;
+        }
+    </style>
 
     <!-- Calendar and Activity Chart -->
     <div class="row mt-4">
