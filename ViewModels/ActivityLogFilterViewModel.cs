@@ -2,6 +2,7 @@ public class ActivityLogDisplayItem : ActivityLog
 {
     public string? StudentName { get; set; }
     public string? CourseName { get; set; }
+    public string? ResourceTitle { get; set; }
 }
 
 public class ActivityLogFilterViewModel

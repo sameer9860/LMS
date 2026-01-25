@@ -966,20 +966,22 @@ public class InstructorController : Controller
             .OrderByDescending(x => x.Timestamp)
             .ToListAsync();
 
-        // Map UserIds to Names
-        var userIds = logs.Select(l => l.UserId).Distinct().ToList();
-        var userIdsInt = new List<int>();
-        foreach (var uid in userIds)
-        {
-            if (int.TryParse(uid, out int id)) userIdsInt.Add(id);
-        }
+        // Map UserIds (Usernames) to Names
+        var appUsernames = logs
+            .Where(l => !string.IsNullOrEmpty(l.UserId))
+            .Select(l => l.UserId)
+            .Distinct()
+            .ToList();
 
+        // ActivityLog.UserId stores the Username string.
+        // We need to find Students who have a User with that Username.
         var students = await _dbContext.Students
-            .Where(s => userIdsInt.Contains(s.UserId))
-            .Select(s => new { s.UserId, Name = s.FirstName + " " + s.LastName })
+            .Include(s => s.User)
+            .Where(s => s.User != null && appUsernames.Contains(s.User.Username))
+            .Select(s => new { Username = s.User!.Username, Name = s.FirstName + " " + s.LastName })
             .ToListAsync();
 
-        var studentDict = students.ToDictionary(s => s.UserId.ToString(), s => s.Name);
+        var studentDict = students.ToDictionary(s => s.Username!, s => s.Name);
 
         // Map CourseIds to Names
         var courseIds = logs
@@ -1001,25 +1003,74 @@ public class InstructorController : Controller
 
         var courseDict = courses.ToDictionary(c => c.Id.ToString(), c => c.FullName);
 
+        // --- RESOURCE MAPPING ---
+        // 1. Materials
+        var materialIds = logs
+            .Where(l => !string.IsNullOrEmpty(l.ResourceId) && 
+                       (l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial))
+            .Select(l => l.ResourceId)
+            .Distinct()
+            .ToList();
+        var matIdsInt = materialIds.Select(id => int.TryParse(id, out int i) ? i : 0).Where(i => i > 0).ToList();
+        var materials = await _dbContext.Materials.Where(m => matIdsInt.Contains(m.Id)).Select(m => new { m.Id, m.Title }).ToListAsync();
+        var materialDict = materials.ToDictionary(m => m.Id.ToString(), m => m.Title);
+
+        // 2. Assignments
+        var assignmentIds = logs
+            .Where(l => !string.IsNullOrEmpty(l.ResourceId) && 
+                       (l.ActivityType == ActivityType.StartAssignment || l.ActivityType == ActivityType.SubmitAssignment))
+            .Select(l => l.ResourceId)
+            .Distinct()
+            .ToList();
+        var assignIdsInt = assignmentIds.Select(id => int.TryParse(id, out int i) ? i : 0).Where(i => i > 0).ToList();
+        var assignments = await _dbContext.Assignments.Where(a => assignIdsInt.Contains(a.Id)).Select(a => new { a.Id, a.Title }).ToListAsync();
+        var assignmentDict = assignments.ToDictionary(a => a.Id.ToString(), a => a.Title);
+
+        // 3. Live Classes
+        var liveClassIds = logs
+             .Where(l => !string.IsNullOrEmpty(l.ResourceId) && 
+                        (l.ActivityType == ActivityType.JoinLiveClass || l.ActivityType == ActivityType.LeaveLiveClass))
+             .Select(l => l.ResourceId)
+             .Distinct()
+             .ToList();
+        var liveIdsInt = liveClassIds.Select(id => int.TryParse(id, out int i) ? i : 0).Where(i => i > 0).ToList();
+        var liveClasses = await _dbContext.LiveClasses.Where(l => liveIdsInt.Contains(l.Id)).Select(l => new { l.Id, l.Title }).ToListAsync();
+        var liveClassDict = liveClasses.ToDictionary(l => l.Id.ToString(), l => l.Title);
+
+
         // Filter to ONLY students and map data
         filter.Logs = logs
             .Where(l => l.UserId != null && studentDict.ContainsKey(l.UserId)) // Must be in studentDict
-            .Select(l => new ActivityLogDisplayItem
-            {
-                Id = l.Id,
-                UserId = l.UserId,
-                CourseId = l.CourseId,
-                ResourceId = l.ResourceId,
-                ActivityType = l.ActivityType,
-                Timestamp = l.Timestamp,
-                DurationSeconds = l.DurationSeconds,
-                IpAddress = l.IpAddress,
-                UserAgent = l.UserAgent,
-                MetadataJson = l.MetadataJson,
-                StudentName = studentDict[l.UserId!],
-                CourseName = (l.CourseId != null && courseDict.ContainsKey(l.CourseId)) 
-                             ? courseDict[l.CourseId] 
-                             : "-"
+            .Select(l => {
+                string resourceTitle = "-";
+                if (!string.IsNullOrEmpty(l.ResourceId))
+                {
+                    if (l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial)
+                        resourceTitle = materialDict.ContainsKey(l.ResourceId) ? materialDict[l.ResourceId] : "Unknown Material";
+                    else if (l.ActivityType == ActivityType.StartAssignment || l.ActivityType == ActivityType.SubmitAssignment)
+                        resourceTitle = assignmentDict.ContainsKey(l.ResourceId) ? assignmentDict[l.ResourceId] : "Unknown Assignment";
+                    else if (l.ActivityType == ActivityType.JoinLiveClass || l.ActivityType == ActivityType.LeaveLiveClass)
+                        resourceTitle = liveClassDict.ContainsKey(l.ResourceId) ? liveClassDict[l.ResourceId] : "Unknown Class"; 
+                }
+
+                return new ActivityLogDisplayItem
+                {
+                    Id = l.Id,
+                    UserId = l.UserId,
+                    CourseId = l.CourseId,
+                    ResourceId = l.ResourceId,
+                    ActivityType = l.ActivityType,
+                    Timestamp = l.Timestamp,
+                    DurationSeconds = l.DurationSeconds,
+                    IpAddress = l.IpAddress,
+                    UserAgent = l.UserAgent,
+                    MetadataJson = l.MetadataJson,
+                    StudentName = studentDict[l.UserId!],
+                    CourseName = (l.CourseId != null && courseDict.ContainsKey(l.CourseId)) 
+                                 ? courseDict[l.CourseId] 
+                                 : "-",
+                    ResourceTitle = resourceTitle
+                };
             }).ToList();
 
         return View(filter);
@@ -1028,21 +1079,50 @@ public class InstructorController : Controller
     [HttpGet]
     public async Task<IActionResult> GetActivityChartData()
     {
-        // Get all student UserIds as strings
-        var studentUserIds = await _dbContext.Students
-            .Select(s => s.UserId)
+        // Get all active student usernames
+        var studentUsernames = await _dbContext.Students
+            .Include(s => s.User)
+            .Where(s => s.User != null && !string.IsNullOrEmpty(s.User.Username))
+            .Select(s => s.User!.Username)
             .ToListAsync();
             
-        var studentUserIdStrings = studentUserIds.Select(id => id.ToString()).ToList();
-
-        // Get activity stats for the last 30 days ONLY for students
+        // Get activity stats for the last 30 days ONLY for students (ActivityLog.UserId == Username)
         var data = await _dbContext.ActivityLogs
             .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) && 
                         l.UserId != null && 
-                        studentUserIdStrings.Contains(l.UserId))
+                        studentUsernames.Contains(l.UserId))
             .GroupBy(l => l.ActivityType)
             .Select(g => new { label = g.Key.ToString(), count = g.Count() })
             .ToListAsync();
+
+        return Json(data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetStudentActivityDistribution()
+    {
+        // Get all active students with Usernames
+        var students = await _dbContext.Students
+            .Include(s => s.User)
+            .Where(s => s.User != null && !string.IsNullOrEmpty(s.User.Username))
+            .Select(s => new { Username = s.User!.Username, Name = s.FirstName + " " + s.LastName })
+            .ToListAsync();
+            
+        var studentDict = students.ToDictionary(s => s.Username!, s => s.Name);
+        var excluded = new[] { "Unknown", "admin" }; // excluded usernames
+
+        var logs = await _dbContext.ActivityLogs
+            .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) && l.UserId != null)
+            .ToListAsync();
+
+        // Group by Student Name
+        var data = logs
+            .Where(l => studentDict.ContainsKey(l.UserId!) && !excluded.Contains(l.UserId))
+            .GroupBy(l => studentDict[l.UserId!])
+            .Select(g => new { label = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .Take(10) // Top 10 active students
+            .ToList();
 
         return Json(data);
     }
