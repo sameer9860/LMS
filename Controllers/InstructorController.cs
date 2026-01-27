@@ -93,7 +93,7 @@ public class InstructorController : Controller
     }
     // GET: List students
     [HttpGet]
-    public IActionResult StudentList()
+    public IActionResult StudentList(StudentFilterViewModel filter)
     {
         // Get the logged-in instructor's username
         var username = User.Identity?.Name;
@@ -115,12 +115,51 @@ public class InstructorController : Controller
         }
 
         // Only get students assigned to this instructor
-        var students = _dbContext.Students
+        var query = _dbContext.Students
             .Include(s => s.User)
             .Where(s => s.Instructorid == instructor.id)
-            .ToList();
+            .AsQueryable();
 
-        return View(students);
+        // Search by name (FirstName, MiddleName, LastName)
+        if (!string.IsNullOrEmpty(filter.SearchQuery))
+        {
+            var searchQuery = filter.SearchQuery.ToLower();
+            query = query.Where(s =>
+                s.FirstName.ToLower().Contains(searchQuery) ||
+                s.MiddleName.ToLower().Contains(searchQuery) ||
+                s.LastName.ToLower().Contains(searchQuery));
+        }
+
+        // Filter by email
+        if (!string.IsNullOrEmpty(filter.Email))
+        {
+            query = query.Where(s => s.User != null && s.User.Username.ToLower().Contains(filter.Email.ToLower()));
+        }
+
+        // Filter by grade
+        if (!string.IsNullOrEmpty(filter.Grade))
+        {
+            query = query.Where(s => s.Grade == filter.Grade);
+        }
+
+        // Filter by guardian name
+        if (!string.IsNullOrEmpty(filter.GuardianName))
+        {
+            query = query.Where(s => s.GuardianName.ToLower().Contains(filter.GuardianName.ToLower()));
+        }
+
+        var students = query.OrderBy(s => s.FirstName).ToList();
+
+        var viewModel = new StudentFilterViewModel
+        {
+            SearchQuery = filter.SearchQuery,
+            Email = filter.Email,
+            Grade = filter.Grade,
+            GuardianName = filter.GuardianName,
+            Students = students
+        };
+
+        return View(viewModel);
     }
 
     // GET: Show form to create student

@@ -1,4 +1,4 @@
-@model List<Instructor>
+@model InstructorFilterViewModel
 
 @{
     ViewBag.Title = "Instructor List";
@@ -6,6 +6,54 @@
 }
 
 <h2>Instructor List</h2>
+
+<!-- Filter Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <i class="bi bi-funnel me-2"></i> Filter Instructors
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Search by Name</label>
+                <input type="text" class="form-control form-control-sm" name="SearchQuery" value="@Model.SearchQuery" placeholder="First, Middle, or Last Name" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Email</label>
+                <input type="email" class="form-control form-control-sm" name="Email" value="@Model.Email" placeholder="e.g. instructor@example.com" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Phone Number</label>
+                <input type="text" class="form-control form-control-sm" name="PhoneNumber" value="@Model.PhoneNumber" placeholder="e.g. 98xxxxxxxx" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Qualification</label>
+                <input type="text" class="form-control form-control-sm" name="Qualification" value="@Model.Qualification" placeholder="e.g. M.Tech, B.Tech" />
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-primary btn-sm px-4">
+                    <i class="bi bi-search me-2"></i> Search
+                </button>
+                <a href="@Url.Action("InstructorList")" class="btn btn-secondary btn-sm px-4">
+                    <i class="bi bi-arrow-clockwise me-2"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Summary -->
+@if (Model.Instructors != null && Model.Instructors.Any())
+{
+    <div class="alert alert-info mb-3">
+        <i class="bi bi-info-circle me-2"></i>
+        Found <strong>@Model.Instructors.Count</strong> instructor(s)
+    </div>
+}
 
 <div class="table-responsive shadow-sm rounded">
 <table class="table table-bordered table-striped align-middle mb-0">
@@ -20,38 +68,49 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var instructor in Model)
+        @if (Model.Instructors != null && Model.Instructors.Any())
+        {
+            @foreach (var instructor in Model.Instructors)
+            {
+                <tr>
+                    <td>@sn</td>
+                    <td>
+                        @instructor.FirstName
+                        @(string.IsNullOrWhiteSpace(instructor.MiddleName) ? "" : instructor.MiddleName + " ")
+                        @instructor.LastName
+                    </td>
+                    <td>@instructor.Email</td>
+                    <td>@instructor.PhoneNumber</td>
+                    <td>@instructor.Qualification</td>
+                    <td>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a asp-action="EditInstructor" asp-route-id="@instructor.id" class="btn btn-sm btn-outline-primary"
+                                title="Edit">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal"
+                                data-bs-target="#deleteConfirmModal" data-id="@instructor.id"
+                                data-username="@instructor.User?.Username">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                            <a asp-action="InstructorProfile" asp-route-id="@instructor.id"
+                                class="btn btn-sm btn-outline-secondary" title="View Profile">
+                                <i class="bi bi-person-circle"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                sn++;
+            }
+        }
+        else
         {
             <tr>
-                <td>@sn</td>
-                <td>
-                    @instructor.FirstName
-                    @(string.IsNullOrWhiteSpace(instructor.MiddleName) ? "" : instructor.MiddleName + " ")
-                    @instructor.LastName
-                </td>
-                <td>@instructor.Email</td>
-                <td>@instructor.PhoneNumber</td>
-                <td>@instructor.Qualification</td>
-                <td>
-                    <div class="d-flex gap-1 justify-content-center">
-                        <a asp-action="EditInstructor" asp-route-id="@instructor.id" class="btn btn-sm btn-outline-primary"
-                            title="Edit">
-                            <i class="bi bi-pencil-square"></i>
-                        </a>
-
-                        <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal"
-                            data-bs-target="#deleteConfirmModal" data-id="@instructor.id"
-                            data-username="@instructor.User?.Username">
-                            <i class="bi bi-trash3"></i>
-                        </button>
-                        <a asp-action="InstructorProfile" asp-route-id="@instructor.id"
-                            class="btn btn-sm btn-outline-secondary" title="View Profile">
-                            <i class="bi bi-person-circle"></i>
-                        </a>
-                    </div>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox me-2"></i> No instructors found
                 </td>
             </tr>
-            sn++;
         }
     </tbody>
 </table>

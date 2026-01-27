@@ -6,6 +6,7 @@ using LMS.Views.Data;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using LMS.Models;
+using LMS.ViewModels;
 
 public class AdminController : Controller
 {
@@ -120,11 +121,51 @@ public class AdminController : Controller
     }
 
     [HttpGet]
-    public IActionResult InstructorList()
+    public IActionResult InstructorList(InstructorFilterViewModel filter)
     {
         // Include User so you can access Username in the view
-        var instructors = _dbContext.Instructors.Include(i => i.User).ToList();
-        return View(instructors);
+        var query = _dbContext.Instructors.Include(i => i.User).AsQueryable();
+
+        // Search by name (FirstName, MiddleName, LastName)
+        if (!string.IsNullOrEmpty(filter.SearchQuery))
+        {
+            var searchQuery = filter.SearchQuery.ToLower();
+            query = query.Where(i => 
+                i.FirstName.ToLower().Contains(searchQuery) ||
+                i.MiddleName.ToLower().Contains(searchQuery) ||
+                i.LastName.ToLower().Contains(searchQuery));
+        }
+
+        // Filter by email
+        if (!string.IsNullOrEmpty(filter.Email))
+        {
+            query = query.Where(i => i.Email.ToLower().Contains(filter.Email.ToLower()));
+        }
+
+        // Filter by phone number
+        if (!string.IsNullOrEmpty(filter.PhoneNumber))
+        {
+            query = query.Where(i => i.PhoneNumber.Contains(filter.PhoneNumber));
+        }
+
+        // Filter by qualification
+        if (!string.IsNullOrEmpty(filter.Qualification))
+        {
+            query = query.Where(i => i.Qualification.ToLower().Contains(filter.Qualification.ToLower()));
+        }
+
+        var instructors = query.OrderBy(i => i.FirstName).ToList();
+
+        var viewModel = new InstructorFilterViewModel
+        {
+            SearchQuery = filter.SearchQuery,
+            Email = filter.Email,
+            PhoneNumber = filter.PhoneNumber,
+            Qualification = filter.Qualification,
+            Instructors = instructors
+        };
+
+        return View(viewModel);
     }
 
     // GET: Edit instructor
