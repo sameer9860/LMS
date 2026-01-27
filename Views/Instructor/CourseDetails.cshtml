@@ -11,6 +11,81 @@
         
 }
 
+<style>
+    #chatWindow div.message {
+        max-width: 70%;
+        padding: 8px 12px;
+        margin: 5px 0;
+        border-radius: 12px;
+        clear: both;
+        word-wrap: break-word;
+    }
+
+    #chatWindow div.message.sender {
+        background-color: var(--sidebar-active-bg);
+        color: var(--sidebar-active-color);
+        margin-left: auto;
+        text-align: right;
+    }
+
+    #chatWindow div.message.receiver {
+        background-color: var(--theme-bg-secondary);
+        color: var(--theme-text-primary);
+        margin-right: auto;
+        text-align: left;
+    }
+
+    #chatWindow {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Emoji Picker Styles */
+    .emoji-picker-container {
+        position: relative;
+    }
+
+    #emojiPicker {
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        padding: 8px;
+        min-width: 250px;
+    }
+
+    #emojiPicker.show {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 4px;
+    }
+
+    #emojiPicker .emoji-item {
+        cursor: pointer;
+        font-size: 24px;
+        padding: 4px;
+        border-radius: 4px;
+        text-align: center;
+        transition: background-color 0.2s;
+        user-select: none;
+    }
+
+    #emojiPicker .emoji-item:hover {
+        background-color: #f0f0f0;
+    }
+
+    .emoji-btn {
+        white-space: nowrap;
+    }
+</style>
+
 <div class="container mt-2">
     <!-- ✅ Breadcrumb with icons -->
     <nav aria-label="breadcrumb" class="mb-3">
@@ -128,7 +203,7 @@
                                 <th class="text-nowrap">Date of Birth</th>
                                 <th class="text-nowrap">Guardian Name</th>
                                 <th class="text-nowrap">Grade</th>
-                                <th class="text-nowrap">Action</th>
+                                <th class="text-nowrap" style="width: 140px;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,18 +219,21 @@
                                         <td>@student?.GuardianName</td>
                                         <td>@student?.Grade</td>
                                         <td>
-                                            <a asp-controller="Student" asp-action="Edit" asp-route-id="@student!.Id"
-                                                class="btn btn-sm btn-outline-primary" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a asp-controller="Student" asp-action="Delete" asp-route-id="@student.Id"
-                                                class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </a>
-                                            <a asp-controller="Student" asp-action="Profile" asp-route-id="@student.Id"
-                                                class="btn btn-sm btn-outline-info" title="Profile">
-                                                <i class="fas fa-user-circle"></i>
-                                            </a>
+                                            <div class="d-flex gap-1 justify-content-center">
+                                                <a asp-action="EditStudent" asp-route-id="@student!.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal"
+                                                    data-bs-target="#deleteConfirmModal" data-id="@student.Id"
+                                                    data-username="@student.User?.Username">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+
+                                                <a asp-action="StudentProfile" asp-route-id="@student.Id" class="btn btn-sm btn-outline-secondary" title="View Profile">
+                                                    <i class="bi bi-person-circle"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                     sn++;
@@ -361,10 +439,16 @@
             }
         </div>
 
-        <div class="card-footer d-flex">
-            <input type="text" id="chatInput" class="form-control" placeholder="Type a message..." />
-            <button class="btn btn-primary ms-2" id="sendButton">
-                <i class="fas fa-paper-plane"></i>
+        <div class="card-footer d-flex gap-2 bg-light">
+            <div class="emoji-picker-container">
+                <button type="button" class="btn btn-outline-secondary emoji-btn" id="emojiToggle" title="Add emoji">
+                    <i class="fas fa-smile"></i>
+                </button>
+                <div id="emojiPicker"></div>
+            </div>
+            <input type="text" id="chatInput" class="form-control" placeholder="Type a message..." autocomplete="off" />
+            <button class="btn btn-primary" id="sendButton">
+                <i class="fas fa-paper-plane"></i> Send
             </button>
         </div>
     </div>
@@ -708,6 +792,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const userName = "@User.Identity!.Name";
         const courseId = "@Model.Id";
 
+        // Auto-scroll to bottom on page load
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/chathub")
             .build();
@@ -737,6 +824,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(data => {
                 if (data.success) {
                     chatInput.value = "";
+                    chatInput.focus();
                     connection.invoke("SendMessage", data.user, data.message, data.time)
                         .catch(err => console.error(err));
                 } else {
@@ -753,8 +841,89 @@ document.addEventListener("DOMContentLoaded", function () {
                 sendMessage();
             }
         });
+
+        // ===== EMOJI PICKER =====
+        const emojiToggle = document.getElementById('emojiToggle');
+        const emojiPicker = document.getElementById('emojiPicker');
+        const chatInputField = document.getElementById('chatInput');
+
+        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', 
+                       '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😌', '😔', '😑', '😐', '😏', '🥱', '😑',
+                       '😑', '🤨', '🤐', '😬', '🤫', '🙁', '😕', '🙁', '☹️', '😲', '😳', '🥺', '😦', '😧', '😨', '😰',
+                       '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈',
+                       '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼',
+                       '😽', '🙀', '😿', '😾', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '💕', '💞',
+                       '💓', '💗', '💖', '💘', '💝', '💟', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞',
+                       '🫰', '🤟', '🤘', '🤙', '👍', '👎', '👊', '👏', '🙌', '👐', '🫲', '🫳', '🤲', '🤝', '💅', '🦾',
+                       '🦿', '💪', '🦵', '🦶', '👂', '👃', '🧠', '🦷', '🦴', '🫀', '🫁', '🔥', '💥', '⭐', '✨', '⚡',
+                       '☄️', '💫', '🌟', '⚫', '⚪', '❤️', '🎉', '🎊', '🎈', '🎁', '🎀', '🎂', '🍰', '🍪', '🍩', '🍫'];
+
+        emojiToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiPicker.classList.toggle('show');
+        });
+
+        // Populate emoji picker
+        emojis.forEach(emoji => {
+            const span = document.createElement('span');
+            span.className = 'emoji-item';
+            span.textContent = emoji;
+            span.addEventListener('click', () => {
+                chatInputField.value += emoji;
+                chatInputField.focus();
+                emojiPicker.classList.remove('show');
+            });
+            emojiPicker.appendChild(span);
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-picker-container')) {
+                emojiPicker.classList.remove('show');
+            }
+        });
     }
 });
 </script>
 }
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete student: <strong id="studentUsername"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Populate Delete Modal for CourseDetails
+    const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+    if (deleteConfirmModal) {
+        deleteConfirmModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const studentId = button.getAttribute('data-id');
+            const username = button.getAttribute('data-username');
+
+            const deleteForm = document.getElementById('deleteForm');
+            const usernameSpan = document.getElementById('studentUsername');
+
+            deleteForm.action = '@Url.Action("DeleteStudent", "Instructor")' + '/' + studentId;
+            usernameSpan.textContent = username;
+        });
+    }
+</script>
 

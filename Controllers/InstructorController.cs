@@ -388,7 +388,12 @@ public class InstructorController : Controller
 
         ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", instructorId);
         
-        var model = new CourseViewModels { InstructorId = instructorId };
+        var model = new CourseViewModels 
+        { 
+            InstructorId = instructorId,
+            StartDate = DateTime.Now,
+            EndDate = DateTime.Now.AddYears(1)
+        };
         return View(model);
     }
 
