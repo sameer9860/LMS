@@ -1,0 +1,104 @@
+@model LMS.Controllers.QuizResultViewModel
+
+@{
+    ViewData["Title"] = "Quiz Result";
+    var passPercentage = 60;
+    var isPassed = Model.Percentage >= passPercentage;
+}
+
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header @(isPassed ? "bg-success" : "bg-danger") text-white">
+            <h3 class="mb-0">@Model.QuizTitle</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>Submitted:</strong> @Model.SubmittedAt.ToString("MMM dd, yyyy HH:mm")</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h4>Status: <span class="@(isPassed ? "text-success" : "text-danger")">
+                        @(isPassed ? "✓ PASSED" : "✗ FAILED")</span></h4>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card text-center bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Score</h5>
+                            <h2 class="text-primary">@Model.Score/@Model.TotalQuestions</h2>
+                            <p class="text-muted">@Model.Percentage%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="progress" style="height: 30px; margin-top: 20px;">
+                        <div class="progress-bar @(isPassed ? "bg-success" : "bg-danger")" 
+                             role="progressbar" 
+                             style="width: @Model.Percentage%" 
+                             aria-valuenow="@Model.Percentage" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            @Model.Percentage%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <h5 class="mt-4 mb-3">Question Breakdown:</h5>
+            @if (Model.Answers != null && Model.Answers.Count > 0)
+            {
+                @for (int i = 0; i < Model.Answers.Count; i++)
+                {
+                    var answer = Model.Answers[i];
+                    <div class="card mb-3 @(answer.IsCorrect ? "border-success" : "border-danger")">
+                        <div class="card-header @(answer.IsCorrect ? "bg-success text-white" : "bg-danger text-white")">
+                            <span class="badge bg-light text-dark">Q@(i + 1)</span>
+                            <span class="ms-2">@(answer.IsCorrect ? "✓ Correct" : "✗ Incorrect")</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Question:</strong> @Model.QuestionDetails[i]?.Question</p>
+                            <p class="mb-2">
+                                <strong>Your Answer:</strong> 
+                                <span class="@(answer.IsCorrect ? "text-success" : "text-danger")">
+                                    @answer.StudentAnswer
+                                </span>
+                            </p>
+                            @if (!answer.IsCorrect)
+                            {
+                                <p class="mb-0">
+                                    <strong>Correct Answer:</strong> 
+                                    <span class="text-success">@answer.CorrectAnswer</span>
+                                </p>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="mt-4">
+                <a href="javascript:history.back()" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </a>
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card.border-success {
+    border-color: #28a745 !important;
+    border-width: 2px;
+}
+
+.card.border-danger {
+    border-color: #dc3545 !important;
+    border-width: 2px;
+}
+</style>

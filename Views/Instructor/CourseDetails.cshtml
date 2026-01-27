@@ -394,10 +394,22 @@
                             @(quiz.Type == LMS.Models.QuizType.AI ? "AI Generated" : "Manual")
                         </div>
                     </div>
-                    <a asp-action="ViewQuiz" asp-route-quizId="@quiz.Id"
-                       class="btn btn-success btn-sm">
-                        <i class="fas fa-question-circle"></i> View Quiz
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a asp-action="ViewQuiz" asp-route-quizId="@quiz.Id"
+                           class="btn btn-success btn-sm">
+                            <i class="fas fa-question-circle"></i> View
+                        </a>
+                        <a asp-action="EditQuiz" asp-route-quizId="@quiz.Id"
+                           class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#deleteQuizModal"
+                                onclick="setQuizDeleteData(@quiz.Id, '@quiz.Title')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
                 </li>
             }
         </ul>
@@ -418,6 +430,74 @@
 
     </div>
 </div>
+
+<!-- Delete Quiz Modal -->
+<div class="modal fade" id="deleteQuizModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Delete Quiz</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the quiz <strong id="quizTitleDisplay"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="deleteQuiz()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let quizIdToDelete = null;
+
+function setQuizDeleteData(quizId, quizTitle) {
+    quizIdToDelete = quizId;
+    document.getElementById('quizTitleDisplay').textContent = quizTitle;
+}
+
+async function deleteQuiz() {
+    if (!quizIdToDelete) return;
+
+    try {
+        const response = await fetch(`/Quiz/DeleteQuiz/${quizIdToDelete}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: 'Quiz deleted successfully.',
+                timer: 1500
+            }).then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Failed to delete quiz.'
+            });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while deleting the quiz.'
+        });
+    }
+}
+</script>
 
 
 

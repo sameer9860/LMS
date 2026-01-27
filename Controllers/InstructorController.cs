@@ -508,7 +508,7 @@ public class InstructorController : Controller
             Assignments = course.Assignments?.ToList(),
             Enrollments = course.Enrollments?.ToList(),
             LiveClasses = course.LiveClasses?.OrderBy(lc => lc.StartTime).ToList(),
-
+            Quizzes = course.Quizzes?.ToList(),
 
             NewLiveClass = new LiveClassViewModel
             {

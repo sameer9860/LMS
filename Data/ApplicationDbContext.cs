@@ -28,7 +28,13 @@ namespace LMS.Views.Data
 
         public DbSet<Quiz> Quizzes { get; set; }
 
+        public DbSet<MCQ> MCQs { get; set; }
+
         public DbSet<ActivityLog> ActivityLogs { get; set; }
+
+        public DbSet<QuizSubmission> QuizSubmissions { get; set; }
+
+        public DbSet<QuizAnswer> QuizAnswers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

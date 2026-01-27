@@ -12,6 +12,7 @@ using LMS.Views.Data;
 
 namespace LMS.Controllers
 {
+    [Route("[controller]")]
     public class QuizController : Controller
     {
         private readonly ApplicationDbContext _dbContext;
@@ -75,7 +76,12 @@ namespace LMS.Controllers
         [HttpGet]
         public IActionResult ManualQuiz(int courseId)
         {
-            var model = new QuizViewModel { CourseId = courseId, Type = QuizType.Traditional };
+            var model = new QuizViewModel 
+            { 
+                CourseId = courseId, 
+                Type = QuizType.Traditional,
+                DueDate = DateTime.Now.AddDays(7)
+            };
             return View(model);
         }
 
@@ -125,6 +131,31 @@ namespace LMS.Controllers
             _dbContext.Quizzes.Add(quiz);
             await _dbContext.SaveChangesAsync();
 
+            // Create notifications for enrolled students
+            var enrolledStudents = _dbContext.Enrollments
+                .Where(e => e.CourseId == model.CourseId)
+                .Include(e => e.Student)
+                .ThenInclude(s => s.User)
+                .Select(e => e.Student!.User)
+                .ToList();
+
+            foreach (var user in enrolledStudents)
+            {
+                _dbContext.Notifications.Add(new Notification
+                {
+                    UserId = user!.Id,
+                    Title = "New Quiz",
+                    Message = $"A new quiz \"{quiz.Title}\" has been added.",
+                    NotificationType = "quiz",
+                    RelatedId = quiz.Id,
+                    IconClass = "fas fa-graduation-cap",
+                    ActionUrl = $"/Quiz/TakeQuiz?id={quiz.Id}",
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            await _dbContext.SaveChangesAsync();
+
             TempData["Success"] = "Manual quiz created successfully!";
             return RedirectToAction("CourseDetails", "Instructor", new { id = model.CourseId });
         }
@@ -161,12 +192,13 @@ namespace LMS.Controllers
         }
 
         // ================= Take Quiz =================
-        [HttpGet]
-        public async Task<IActionResult> TakeQuiz(int quizId)
+        [Route("[action]/{id}")]
+        [Route("[action]")]
+        public async Task<IActionResult> TakeQuiz(int id)
         {
             var quiz = await _dbContext.Quizzes
                 .Include(q => q.MCQs)
-                .FirstOrDefaultAsync(q => q.Id == quizId);
+                .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quiz == null) return NotFound();
 
@@ -194,6 +226,300 @@ namespace LMS.Controllers
 
             return View(model);
         }
+
+        // ================= Submit Quiz =================
+        [HttpPost]
+        public async Task<IActionResult> SubmitQuiz([FromBody] QuizSubmissionViewModel model)
+        {
+            if (model == null || model.QuizId == 0)
+                return BadRequest("Invalid quiz data");
+
+            var username = User.Identity?.Name;
+            var student = await _dbContext.Students
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.User!.Username == username);
+
+            if (student == null)
+                return Unauthorized();
+
+            var quiz = await _dbContext.Quizzes
+                .Include(q => q.MCQs)
+                .FirstOrDefaultAsync(q => q.Id == model.QuizId);
+
+            if (quiz == null)
+                return NotFound();
+
+            // Calculate score
+            int correctAnswers = 0;
+            var answers = new List<QuizAnswer>();
+
+            foreach (var submittedAnswer in model.Answers)
+            {
+                var mcq = quiz.MCQs.FirstOrDefault(q => q.Id == submittedAnswer.MCQId);
+                if (mcq != null)
+                {
+                    bool isCorrect = mcq.CorrectAnswer.Equals(submittedAnswer.Answer, StringComparison.OrdinalIgnoreCase);
+                    if (isCorrect) correctAnswers++;
+
+                    answers.Add(new QuizAnswer
+                    {
+                        MCQId = submittedAnswer.MCQId,
+                        StudentAnswer = submittedAnswer.Answer,
+                        IsCorrect = isCorrect
+                    });
+                }
+            }
+
+            // Create submission record
+            var submission = new QuizSubmission
+            {
+                QuizId = model.QuizId,
+                StudentId = student.Id,
+                SubmittedAt = DateTime.Now,
+                Score = correctAnswers,
+                TotalQuestions = quiz.MCQs.Count,
+                Answers = answers
+            };
+
+            _dbContext.QuizSubmissions.Add(submission);
+            await _dbContext.SaveChangesAsync();
+
+            // Calculate percentage
+            double percentage = (correctAnswers * 100.0) / quiz.MCQs.Count;
+
+            return Ok(new
+            {
+                success = true,
+                score = correctAnswers,
+                totalQuestions = quiz.MCQs.Count,
+                percentage = Math.Round(percentage, 2),
+                submissionId = submission.Id
+            });
+        }
+
+        // ================= View Quiz Result =================
+        [HttpGet]
+        public async Task<IActionResult> QuizResult(int submissionId)
+        {
+            var submission = await _dbContext.QuizSubmissions
+                .Include(s => s.Quiz)
+                .ThenInclude(q => q.MCQs)
+                .Include(s => s.Answers)
+                .ThenInclude(a => a.MCQ)
+                .Include(s => s.Student)
+                .FirstOrDefaultAsync(s => s.Id == submissionId);
+
+            if (submission == null)
+                return NotFound();
+
+            // Check if user is the student or instructor of the course
+            var username = User.Identity?.Name;
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == username);
+
+            // Build the result view model
+            var score = submission.Score ?? 0;
+            var totalQuestions = submission.TotalQuestions ?? 0;
+            var percentage = totalQuestions > 0 ? (score * 100.0) / totalQuestions : 0;
+            
+            var answerDetails = submission.Answers.Select(a => new QuizAnswerDetail
+            {
+                StudentAnswer = a.StudentAnswer,
+                IsCorrect = a.IsCorrect,
+                CorrectAnswer = a.MCQ?.CorrectAnswer ?? "N/A"
+            }).ToList();
+
+            var questionDetails = submission.Quiz?.MCQs.Select(q => new QuestionDetail
+            {
+                Question = q.Question
+            }).ToList() ?? new List<QuestionDetail>();
+
+            var model = new QuizResultViewModel
+            {
+                QuizTitle = submission.Quiz?.Title ?? "Quiz",
+                Score = score,
+                TotalQuestions = totalQuestions,
+                Percentage = Math.Round(percentage),
+                SubmittedAt = submission.SubmittedAt,
+                Answers = answerDetails,
+                QuestionDetails = questionDetails
+            };
+
+            return View(model);
+        }
+
+        // ================= Delete Quiz =================
+        [HttpPost]
+        public async Task<IActionResult> DeleteQuiz(int quizId)
+        {
+            var quiz = await _dbContext.Quizzes
+                .Include(q => q.MCQs)
+                .FirstOrDefaultAsync(q => q.Id == quizId);
+
+            if (quiz == null)
+                return Json(new { success = false, message = "Quiz not found" });
+
+            // Verify authorization (check if user is instructor of the course)
+            var username = User.Identity?.Name;
+            var instructor = await _dbContext.Instructors
+                .Include(i => i.User)
+                .FirstOrDefaultAsync(i => i.User!.Username == username);
+
+            if (instructor == null)
+                return Json(new { success = false, message = "Unauthorized" });
+
+            var course = await _dbContext.Courses.FirstOrDefaultAsync(c => c.Id == quiz.CourseId && c.Instructorid == instructor.id);
+            if (course == null)
+                return Json(new { success = false, message = "Unauthorized" });
+
+            try
+            {
+                // Remove all notifications related to this quiz
+                var notifications = _dbContext.Notifications
+                    .Where(n => n.RelatedId == quizId && n.NotificationType == "quiz")
+                    .ToList();
+                _dbContext.Notifications.RemoveRange(notifications);
+
+                // Remove all quiz submissions
+                var submissions = _dbContext.QuizSubmissions.Where(s => s.QuizId == quizId).ToList();
+                _dbContext.QuizSubmissions.RemoveRange(submissions);
+
+                // Remove the quiz (MCQs will be removed by cascade delete)
+                _dbContext.Quizzes.Remove(quiz);
+                await _dbContext.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Quiz deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error deleting quiz: {ex.Message}" });
+            }
+        }
+
+        // ================= Edit Quiz (GET) =================
+        [HttpGet]
+        public async Task<IActionResult> EditQuiz(int quizId)
+        {
+            var quiz = await _dbContext.Quizzes
+                .Include(q => q.MCQs)
+                .FirstOrDefaultAsync(q => q.Id == quizId);
+
+            if (quiz == null)
+                return NotFound();
+
+            // Verify authorization
+            var username = User.Identity?.Name;
+            var instructor = await _dbContext.Instructors
+                .Include(i => i.User)
+                .FirstOrDefaultAsync(i => i.User!.Username == username);
+
+            if (instructor == null)
+                return Unauthorized();
+
+            var course = await _dbContext.Courses.FirstOrDefaultAsync(c => c.Id == quiz.CourseId && c.Instructorid == instructor.id);
+            if (course == null)
+                return Unauthorized();
+
+            // Map to QuizViewModel for editing
+            var model = new QuizViewModel
+            {
+                Id = quiz.Id,
+                Title = quiz.Title,
+                Description = quiz.Description,
+                CourseId = quiz.CourseId,
+                DueDate = quiz.DueDate,
+                Type = quiz.Type,
+                Questions = quiz.MCQs.Select(q => new MCQViewModel
+                {
+                    Question = q.Question,
+                    OptionA = q.OptionA,
+                    OptionB = q.OptionB,
+                    OptionC = q.OptionC,
+                    OptionD = q.OptionD,
+                    OptionE = q.OptionE,
+                    CorrectAnswer = q.CorrectAnswer,
+                    Feedback = q.Feedback
+                }).ToList()
+            };
+
+            return View(model);
+        }
+
+        // ================= Edit Quiz (POST) =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditQuiz(QuizViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var quiz = await _dbContext.Quizzes
+                .Include(q => q.MCQs)
+                .FirstOrDefaultAsync(q => q.Id == model.Id);
+
+            if (quiz == null)
+                return NotFound();
+
+            // Verify authorization
+            var username = User.Identity?.Name;
+            var instructor = await _dbContext.Instructors
+                .Include(i => i.User)
+                .FirstOrDefaultAsync(i => i.User!.Username == username);
+
+            if (instructor == null)
+                return Unauthorized();
+
+            var course = await _dbContext.Courses.FirstOrDefaultAsync(c => c.Id == quiz.CourseId && c.Instructorid == instructor.id);
+            if (course == null)
+                return Unauthorized();
+
+            try
+            {
+                // Update quiz properties
+                quiz.Title = model.Title;
+                quiz.Description = model.Description;
+                quiz.DueDate = model.DueDate;
+
+                // Remove old MCQs
+                _dbContext.MCQs.RemoveRange(quiz.MCQs);
+
+                // Add new MCQs
+                quiz.MCQs = model.Questions.Select(q => new MCQ
+                {
+                    Question = q.Question,
+                    OptionA = q.OptionA,
+                    OptionB = q.OptionB,
+                    OptionC = q.OptionC,
+                    OptionD = q.OptionD,
+                    OptionE = q.OptionE,
+                    CorrectAnswer = q.CorrectAnswer,
+                    Feedback = q.Feedback
+                }).ToList();
+
+                _dbContext.Quizzes.Update(quiz);
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = "Quiz updated successfully!";
+                return RedirectToAction("CourseDetails", "Instructor", new { id = quiz.CourseId });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"Error updating quiz: {ex.Message}");
+                return View(model);
+            }
+        }
+    }
+
+    // ViewModel for quiz submission
+    public class QuizSubmissionViewModel
+    {
+        public int QuizId { get; set; }
+        public List<SubmittedAnswerViewModel> Answers { get; set; } = new();
+    }
+
+    public class SubmittedAnswerViewModel
+    {
+        public int MCQId { get; set; }
+        public string Answer { get; set; } = string.Empty;
     }
 
     // ViewModel for taking a quiz
@@ -210,5 +536,28 @@ namespace LMS.Controllers
         public List<string> Options { get; set; } = new();
         public string CorrectAnswer { get; set; } = string.Empty;
         public string Feedback { get; set; } = string.Empty;
+    }
+
+    public class QuizResultViewModel
+    {
+        public string QuizTitle { get; set; } = string.Empty;
+        public int Score { get; set; }
+        public int TotalQuestions { get; set; }
+        public double Percentage { get; set; }
+        public DateTime SubmittedAt { get; set; }
+        public List<QuizAnswerDetail> Answers { get; set; } = new();
+        public List<QuestionDetail> QuestionDetails { get; set; } = new();
+    }
+
+    public class QuizAnswerDetail
+    {
+        public string StudentAnswer { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public string CorrectAnswer { get; set; } = string.Empty;
+    }
+
+    public class QuestionDetail
+    {
+        public string Question { get; set; } = string.Empty;
     }
 }

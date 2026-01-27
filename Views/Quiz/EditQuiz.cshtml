@@ -1,0 +1,170 @@
+@model LMS.ViewModels.QuizViewModel
+@{
+    ViewData["Title"] = "Edit Quiz";
+}
+
+<div class="container mt-4">
+    <h4>Edit Quiz</h4>
+
+    <form asp-action="EditQuiz" method="post">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="CourseId" />
+        <input type="hidden" asp-for="Type" />
+
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label">Quiz Title</label>
+            <input asp-for="Title" class="form-control" placeholder="Enter quiz title" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control" placeholder="Optional description"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="DueDate" class="form-label">Due Date</label>
+            <input asp-for="DueDate" class="form-control" type="datetime-local" />
+            <span asp-validation-for="DueDate" class="text-danger"></span>
+        </div>
+
+        <hr />
+        <h5>Questions</h5>
+
+        <div id="questionsContainer">
+            @for (int i = 0; i < Model.Questions.Count; i++)
+            {
+                <div class="card mb-3 p-3">
+                    <h6>Question @(i + 1)</h6>
+                    <input type="hidden" asp-for="@Model.Questions[i].Id" />
+
+                    <div class="mb-2">
+                        <label asp-for="@Model.Questions[i].Question" class="form-label">Question Text</label>
+                        <input asp-for="@Model.Questions[i].Question" class="form-control" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <input asp-for="@Model.Questions[i].OptionA" class="form-control mb-1" placeholder="Option A" />
+                        </div>
+                        <div class="col">
+                            <input asp-for="@Model.Questions[i].OptionB" class="form-control mb-1" placeholder="Option B" />
+                        </div>
+                        <div class="col">
+                            <input asp-for="@Model.Questions[i].OptionC" class="form-control mb-1" placeholder="Option C" />
+                        </div>
+                        <div class="col">
+                            <input asp-for="@Model.Questions[i].OptionD" class="form-control mb-1" placeholder="Option D" />
+                        </div>
+                        <div class="col">
+                            <input asp-for="@Model.Questions[i].OptionE" class="form-control mb-1" placeholder="Option E (optional)" />
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col">
+                            <label class="form-label">Correct Answer</label>
+                            <select asp-for="@Model.Questions[i].CorrectAnswer" class="form-select">
+                                <option>Select Correct Answer</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="E">E</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Feedback (optional)</label>
+                            <input asp-for="@Model.Questions[i].Feedback" class="form-control" placeholder="Explanation for the answer" />
+                        </div>
+                        <div class="col d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeQuestion(@i)">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary mb-3" onclick="addQuestion()">
+            <i class="fas fa-plus"></i> Add Question
+        </button>
+
+        <hr />
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a asp-controller="Instructor" asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+let questionCount = @Model.Questions.Count;
+
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const newQuestionHtml = `
+        <div class="card mb-3 p-3">
+            <h6>Question ${questionCount + 1}</h6>
+            <div class="mb-2">
+                <label class="form-label">Question Text</label>
+                <input name="Questions[${questionCount}].Question" class="form-control" placeholder="Enter question" />
+            </div>
+            <div class="row">
+                <div class="col">
+                    <input name="Questions[${questionCount}].OptionA" class="form-control mb-1" placeholder="Option A" />
+                </div>
+                <div class="col">
+                    <input name="Questions[${questionCount}].OptionB" class="form-control mb-1" placeholder="Option B" />
+                </div>
+                <div class="col">
+                    <input name="Questions[${questionCount}].OptionC" class="form-control mb-1" placeholder="Option C" />
+                </div>
+                <div class="col">
+                    <input name="Questions[${questionCount}].OptionD" class="form-control mb-1" placeholder="Option D" />
+                </div>
+                <div class="col">
+                    <input name="Questions[${questionCount}].OptionE" class="form-control mb-1" placeholder="Option E (optional)" />
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col">
+                    <label class="form-label">Correct Answer</label>
+                    <select name="Questions[${questionCount}].CorrectAnswer" class="form-select">
+                        <option>Select Correct Answer</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <label class="form-label">Feedback (optional)</label>
+                    <input name="Questions[${questionCount}].Feedback" class="form-control" placeholder="Explanation for the answer" />
+                </div>
+                <div class="col d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm w-100" onclick="this.closest('.card').remove()">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', newQuestionHtml);
+    questionCount++;
+}
+
+function removeQuestion(index) {
+    const cards = document.querySelectorAll('#questionsContainer .card');
+    if (cards[index]) {
+        cards[index].remove();
+    }
+}
+</script>
