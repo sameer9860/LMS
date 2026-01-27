@@ -85,18 +85,15 @@
     <script>
         @if (TempData["PasswordChanged"] != null)
         {
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
-            var dashboardUrl = Url.Action("Dashboard", userRole);
-            
             <text>
             Swal.fire({
                 icon: 'success',
                 title: 'Success!',
-                text: 'Your password has been changed successfully. Redirecting you to the dashboard...',
-                timer: 2000,
+                text: 'Your password has been changed successfully. You will be logged out in a moment...',
+                timer: 3000,
                 showConfirmButton: false,
                 willClose: () => {
-                    window.location.href = '@dashboardUrl';
+                    window.location.href = '@Url.Action("Logout", "Account")';
                 }
             });
             </text>

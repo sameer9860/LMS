@@ -741,7 +741,7 @@ public class InstructorController : Controller
                 NotificationType = "assignment",
                 RelatedId = assignment.Id,
                 IconClass = "fas fa-tasks",
-                ActionUrl = $"/Student/CourseDetails/{model.CourseId}?tab=assignments",
+                ActionUrl = $"/Student/StartAssignment/{assignment.Id}",
                 CreatedAt = DateTime.Now
             });
         }

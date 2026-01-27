@@ -63,27 +63,27 @@
     <div class="overflow-auto mb-3">
         <ul class="nav nav-pills flex-nowrap" id="courseTab" role="tablist">
             <li class="nav-item me-1" role="presentation">
-                <button class="nav-link text-nowrap active" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
+                <button class="nav-link text-nowrap @(activeTab == "overview" || activeTab == "course" || string.IsNullOrEmpty(activeTab) ? "active" : "")" id="course-tab" data-bs-toggle="tab" data-bs-target="#course" type="button" role="tab">
                     <i class="fas fa-info-circle me-1"></i> Course
                 </button>
             </li>
             <li class="nav-item me-1" role="presentation">
-                <button class="nav-link text-nowrap" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab">
+                <button class="nav-link text-nowrap @(activeTab == "participants" ? "active" : "")" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab">
                     <i class="fas fa-users me-1"></i> Participants
                 </button>
             </li>
             <li class="nav-item me-1" role="presentation">
-                <button class="nav-link text-nowrap" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
+                <button class="nav-link text-nowrap @(activeTab == "materials" ? "active" : "")" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">
                     <i class="fas fa-folder-open me-1"></i> Materials
                 </button>
             </li>
             <li class="nav-item me-1" role="presentation">
-                <button class="nav-link text-nowrap" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
+                <button class="nav-link text-nowrap @(activeTab == "live-classes" ? "active" : "")" id="live-classes-tab" data-bs-toggle="tab" data-bs-target="#live-classes" type="button" role="tab">
                     <i class="fas fa-video me-1"></i> Live Classes
                 </button>
             </li>
             <li class="nav-item me-1" role="presentation">
-                <button class="nav-link text-nowrap" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
+                <button class="nav-link text-nowrap @(activeTab == "chat" ? "active" : "")" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
                     <i class="fas fa-comments me-1"></i> Chat
                 </button>
             </li>
@@ -98,7 +98,7 @@
 
     <div class="tab-content" id="courseTabContent">
         <!-- Course Info Tab -->
-<div class="tab-pane fade show active" id="course" role="tabpanel">
+<div class="tab-pane fade @(activeTab == "overview" || activeTab == "course" || string.IsNullOrEmpty(activeTab) ? "show active" : "")" id="course" role="tabpanel">
             <div class="card shadow-sm mb-3">
                 <img src="~/@(string.IsNullOrEmpty(Model.ImagePath) ? "images/default-course.png" : Model.ImagePath)" class="card-img-top" style="height:220px; object-fit:cover;" />
                 <div class="card-body">
@@ -114,7 +114,7 @@
 </div>
 
         <!-- Participants Tab -->
-<div class="tab-pane fade" id="participants" role="tabpanel">
+<div class="tab-pane fade @(activeTab == "participants" ? "show active" : "")" id="participants" role="tabpanel">
             <h5>Enrolled Students</h5>
             @if (Model.Enrollments != null && Model.Enrollments.Any())
             {
@@ -160,7 +160,7 @@
 </div>
 
         <!-- Materials Tab -->
-<div class="tab-pane fade" id="materials" role="tabpanel">
+<div class="tab-pane fade @(activeTab == "materials" ? "show active" : "")" id="materials" role="tabpanel">
             <h5 class="mb-3">Course Materials</h5>
 
             @* Filter out assignment materials *@
@@ -223,7 +223,7 @@
 </div>
 
         <!-- Live Classes Tab -->
-<div class="tab-pane fade" id="live-classes" role="tabpanel">
+<div class="tab-pane fade @(activeTab == "live-classes" ? "show active" : "")" id="live-classes" role="tabpanel">
             <h5 class="mb-3">Live Classes</h5>
 
             @if (Model.LiveClasses != null && Model.LiveClasses.Any())
@@ -301,7 +301,7 @@
 </div>
 
         @* chat tab *@
-<div class="tab-pane fade" id="chat" role="tabpanel">
+<div class="tab-pane fade @(activeTab == "chat" ? "show active" : "")" id="chat" role="tabpanel">
             <div class="card overflow-hidden">
                 <div class="card-header bg-gradient-info">
                     <i class="fas fa-comments"></i> Course Chat
@@ -324,7 +324,7 @@
 </div>
 
 <!-- Assignments Tab -->
-<div class="tab-pane fade" id="assignments" role="tabpanel" aria-labelledby="assignments-tab">
+<div class="tab-pane fade @(activeTab == "assignments" ? "show active" : "")" id="assignments" role="tabpanel" aria-labelledby="assignments-tab">
             @if (Model.Assignments != null && Model.Assignments.Any())
             {
                 <ul class="list-group">
