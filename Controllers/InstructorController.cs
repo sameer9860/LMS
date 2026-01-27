@@ -166,17 +166,36 @@ public class InstructorController : Controller
     [HttpGet]
     public IActionResult EnrollStudents()
     {
-        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
-        return View(new StudentViewModel());
+        var username = User.Identity?.Name;
+        var loggedInInstructor = _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefault(i => i.User!.Username == username);
+
+        var instructorId = loggedInInstructor?.id ?? 0;
+
+        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", instructorId);
+        
+        var model = new StudentViewModel { InstructorId = instructorId };
+        return View(model);
     }
 
     // POST: Handle create student
     [HttpPost]
     public async Task<IActionResult> EnrollStudents(StudentViewModel model)
     {
+        var username = User.Identity?.Name;
+        var loggedInInstructor = _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefault(i => i.User!.Username == username);
+
+        if (loggedInInstructor != null && model.InstructorId == 0)
+        {
+            model.InstructorId = loggedInInstructor.id;
+        }
+
         if (!ModelState.IsValid)
         {
-            ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
+            ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", model.InstructorId);
             return View(model);
         }
 
@@ -231,7 +250,7 @@ public class InstructorController : Controller
         catch (Exception ex)
         {
             ModelState.AddModelError("", "Error: " + ex.Message);
-            ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
+            ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", model.InstructorId);
             return View(model);
         }
     }
@@ -360,8 +379,17 @@ public class InstructorController : Controller
     [HttpGet]
     public IActionResult CreateCourse()
     {
-        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
-        return View();
+        var username = User.Identity?.Name;
+        var loggedInInstructor = _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefault(i => i.User!.Username == username);
+
+        var instructorId = loggedInInstructor?.id ?? 0;
+
+        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", instructorId);
+        
+        var model = new CourseViewModels { InstructorId = instructorId };
+        return View(model);
     }
 
     [HttpPost]
