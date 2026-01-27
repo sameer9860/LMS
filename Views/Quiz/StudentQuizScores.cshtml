@@ -1,0 +1,130 @@
+@model List<LMS.Controllers.StudentQuizScoreViewModel>
+
+@{
+    ViewData["Title"] = "My Quiz Scores";
+    var course = ViewBag.Course as LMS.Models.Course;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>My Quiz Scores</h2>
+            <p class="text-muted"><strong>Course:</strong> @course?.FullName</p>
+        </div>
+        <a asp-controller="Student" asp-action="CourseDetails" asp-route-id="@course?.Id" 
+           class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Course
+        </a>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="row">
+            @foreach (var quiz in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 @(quiz.HasSubmitted ? "border-success" : "border-warning")">
+                        <div class="card-header @(quiz.HasSubmitted ? "bg-success text-white" : "bg-warning text-dark")">
+                            <h5 class="card-title mb-0">@quiz.QuizTitle</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted">
+                                <small>@quiz.QuizDescription</small>
+                            </p>
+
+                            @if (quiz.HasSubmitted)
+                            {
+                                <div class="mb-3">
+                                    <p class="mb-1"><strong>Score:</strong></p>
+                                    <h4 class="text-success">
+                                        @quiz.Score / @quiz.TotalQuestions
+                                    </h4>
+                                </div>
+
+                                <div class="progress mb-3">
+                                    <div class="progress-bar @(quiz.Percentage >= 70 ? "bg-success" : quiz.Percentage >= 50 ? "bg-warning" : "bg-danger")" 
+                                         role="progressbar" 
+                                         style="width: @quiz.Percentage%;"
+                                         aria-valuenow="@((int)quiz.Percentage)" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        @quiz.Percentage%
+                                    </div>
+                                </div>
+
+                                <p class="small text-muted mb-0">
+                                    <i class="fas fa-calendar-alt"></i> 
+                                    Submitted: @(quiz.SubmittedAt?.ToString("MMM dd, yyyy HH:mm") ?? "N/A")
+                                </p>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-clock"></i> Not yet submitted
+                                </div>
+                            }
+                        </div>
+                        @if (quiz.HasSubmitted)
+                        {
+                            <div class="card-footer bg-light">
+                                <a asp-controller="Quiz" asp-action="QuizResult" 
+                                   asp-route-submissionId="@quiz.QuizId" 
+                                   class="btn btn-sm btn-info w-100">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Summary</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <p class="mb-0"><small>Total Quizzes:</small></p>
+                                <h4>@Model.Count</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-0"><small>Submitted:</small></p>
+                                <h4>@Model.Count(q => q.HasSubmitted)</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-0"><small>Not Submitted:</small></p>
+                                <h4>@Model.Count(q => !q.HasSubmitted)</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-0"><small>Average Score:</small></p>
+                                <h4>
+                                    @{
+                                        var submitted = Model.Where(q => q.HasSubmitted).ToList();
+                                        var avgPercentage = submitted.Count > 0 
+                                            ? Math.Round(submitted.Average(q => q.Percentage), 2)
+                                            : 0;
+                                    }
+                                    @avgPercentage%
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No quizzes available for this course.
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Optional: Add sorting/filtering functionality here
+    </script>
+}

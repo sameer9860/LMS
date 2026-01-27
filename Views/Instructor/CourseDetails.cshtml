@@ -399,6 +399,10 @@
                            class="btn btn-success btn-sm">
                             <i class="fas fa-question-circle"></i> View
                         </a>
+                        <a asp-controller="Quiz" asp-action="QuizSubmissions" asp-route-quizId="@quiz.Id"
+                           class="btn btn-info btn-sm">
+                            <i class="fas fa-chart-bar"></i> Submissions
+                        </a>
                         <a asp-controller="Quiz" asp-action="EditQuiz" asp-route-quizId="@quiz.Id"
                            class="btn btn-warning btn-sm">
                             <i class="fas fa-edit"></i> Edit

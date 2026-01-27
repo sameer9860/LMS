@@ -7,44 +7,100 @@
 
 <div class="container mt-4">
     <h2>My Assignment Submissions and Results</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>S.N</th>
-                <th>Assignment</th>
-                <th>Submitted File</th>
-                <th>Marks</th>
-                <th>Feedback</th>
-                <th>Remarks</th> @* ✅ New column *@
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var submission in Model)
-            {
+    
+    @{
+        var pendingSubmissions = Model.Where(s => !s.MarksObtained.HasValue).ToList();
+        var gradedSubmissions = Model.Where(s => s.MarksObtained.HasValue).ToList();
+    }
+
+    @if (pendingSubmissions.Any())
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <strong><i class="fas fa-hourglass-end"></i> Pending to Grade</strong> - Your assignment(s) have been submitted and are waiting for instructor feedback.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <h4 class="mt-4">📋 Submitted (Awaiting Grading)</h4>
+        <table class="table table-striped">
+            <thead class="table-light">
                 <tr>
-                    <td>@(Model.IndexOf(submission) + 1)</td>
-                    <td>@submission.Assignment?.Title</td>
-                    <td>
-                        <a href="~/@submission.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
-                    </td>
-                    <td>@(submission.MarksObtained.HasValue ? submission.MarksObtained.ToString() : "Pending")</td>
-                    <td>@(string.IsNullOrEmpty(submission.Feedback) ? "-" : submission.Feedback)</td>
-                    <td>
-                        @if (!submission.MarksObtained.HasValue)
-                        {
-                            <span class="text-muted">Pending</span>
-                        }
-                        else if (submission.IsPassed == true)
-                        {
-                            <span class="badge bg-success">Passed</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-danger">Failed</span>
-                        }
-                    </td>
+                    <th>S.N</th>
+                    <th>Assignment</th>
+                    <th>Submitted File</th>
+                    <th>Submitted On</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var submission in pendingSubmissions)
+                {
+                    <tr>
+                        <td>@(pendingSubmissions.IndexOf(submission) + 1)</td>
+                        <td><strong>@submission.Assignment?.Title</strong></td>
+                        <td>
+                            <a href="~/@submission.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i> View
+                            </a>
+                        </td>
+                        <td>@submission.SubmittedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (gradedSubmissions.Any())
+    {
+        <h4 class="mt-5">✅ Graded Submissions</h4>
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>S.N</th>
+                    <th>Assignment</th>
+                    <th>Submitted File</th>
+                    <th>Marks</th>
+                    <th>Feedback</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var submission in gradedSubmissions)
+                {
+                    <tr>
+                        <td>@(gradedSubmissions.IndexOf(submission) + 1)</td>
+                        <td>@submission.Assignment?.Title</td>
+                        <td>
+                            <a href="~/@submission.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i> View
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">@submission.MarksObtained Marks</span>
+                        </td>
+                        <td>@(string.IsNullOrEmpty(submission.Feedback) ? "-" : submission.Feedback)</td>
+                        <td>
+                            @if (submission.IsPassed == true)
+                            {
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Passed</span>
+                            }
+                            else if (submission.IsPassed == false)
+                            {
+                                <span class="badge bg-danger"><i class="fas fa-times"></i> Failed</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-inbox"></i> No submissions yet. Submit an assignment to get started.
+        </div>
+    }
 </div>

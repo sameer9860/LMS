@@ -148,6 +148,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUXVpei9RdWl6UmVzdWx0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/samir/E/Projects/LMS/Views/Quiz/QuizSubmissions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUXVpei9RdWl6U3VibWlzc2lvbnMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/samir/E/Projects/LMS/Views/Quiz/StudentQuizScores.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUXVpei9TdHVkZW50UXVpelNjb3Jlcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/samir/E/Projects/LMS/Views/Quiz/TakeQuiz.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUXVpei9UYWtlUXVpei5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

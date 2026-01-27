@@ -307,7 +307,7 @@ namespace LMS.Controllers
         }
 
         // ================= View Quiz Result =================
-        [HttpGet("QuizResult")]
+        [HttpGet("QuizResult/{submissionId}")]
         public async Task<IActionResult> QuizResult(int submissionId)
         {
             var submission = await _dbContext.QuizSubmissions
@@ -524,6 +524,89 @@ namespace LMS.Controllers
                 return View(model);
             }
         }
+
+        // ================= View Quiz Submissions (Instructor) =================
+        [HttpGet("QuizSubmissions")]
+        public async Task<IActionResult> QuizSubmissions(int quizId)
+        {
+            var quiz = await _dbContext.Quizzes
+                .Include(q => q.Course)
+                .FirstOrDefaultAsync(q => q.Id == quizId);
+
+            if (quiz == null)
+                return NotFound();
+
+            // Verify authorization (instructor of the course)
+            var username = User.Identity?.Name;
+            var instructor = await _dbContext.Instructors
+                .Include(i => i.User)
+                .FirstOrDefaultAsync(i => i.User!.Username == username);
+
+            if (instructor == null || quiz.Course.Instructorid != instructor.id)
+                return Unauthorized();
+
+            var submissions = await _dbContext.QuizSubmissions
+                .Where(s => s.QuizId == quizId)
+                .Include(s => s.Student)
+                .ThenInclude(st => st.User)
+                .Include(s => s.Quiz)
+                .OrderByDescending(s => s.SubmittedAt)
+                .ToListAsync();
+
+            ViewBag.Quiz = quiz;
+            return View(submissions);
+        }
+
+        // ================= Student Quiz Scores =================
+        [HttpGet("StudentQuizScores")]
+        public async Task<IActionResult> StudentQuizScores(int courseId)
+        {
+            var username = User.Identity?.Name;
+            var student = await _dbContext.Students
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.User!.Username == username);
+
+            if (student == null)
+                return Unauthorized();
+
+            // Verify student is enrolled in the course
+            var enrollment = await _dbContext.Enrollments
+                .FirstOrDefaultAsync(e => e.StudentId == student.Id && e.CourseId == courseId);
+
+            if (enrollment == null)
+                return Unauthorized();
+
+            var course = await _dbContext.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
+
+            var quizzes = await _dbContext.Quizzes
+                .Where(q => q.CourseId == courseId)
+                .ToListAsync();
+
+            var quizScores = new List<StudentQuizScoreViewModel>();
+
+            foreach (var quiz in quizzes)
+            {
+                var submission = await _dbContext.QuizSubmissions
+                    .FirstOrDefaultAsync(s => s.QuizId == quiz.Id && s.StudentId == student.Id);
+
+                quizScores.Add(new StudentQuizScoreViewModel
+                {
+                    QuizId = quiz.Id,
+                    QuizTitle = quiz.Title,
+                    QuizDescription = quiz.Description,
+                    Score = submission?.Score ?? 0,
+                    TotalQuestions = submission?.TotalQuestions ?? 0,
+                   Percentage = submission != null && submission.TotalQuestions > 0
+    ? Math.Round((submission.Score ?? 0d) * 100.0 / (double)submission.TotalQuestions, 2)
+    : 0,
+                    SubmittedAt = submission?.SubmittedAt,
+                    HasSubmitted = submission != null
+                });
+            }
+
+            ViewBag.Course = course;
+            return View(quizScores);
+        }
     }
 
     // ViewModel for quiz submission
@@ -578,4 +661,15 @@ namespace LMS.Controllers
     {
         public string Question { get; set; } = string.Empty;
     }
-}
+
+    public class StudentQuizScoreViewModel
+    {
+        public int QuizId { get; set; }
+        public string QuizTitle { get; set; } = string.Empty;
+        public string? QuizDescription { get; set; }
+        public int Score { get; set; }
+        public int TotalQuestions { get; set; }
+        public double Percentage { get; set; }
+        public DateTime? SubmittedAt { get; set; }
+        public bool HasSubmitted { get; set; }
+    }}

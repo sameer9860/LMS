@@ -21,6 +21,7 @@
     <tbody>
         @foreach (var submission in Model)
         {
+            var isGraded = submission.MarksObtained.HasValue;
             <tr>
                 <td>@(Model.IndexOf(submission) + 1) </td>
                 <td>@submission.Student?.FirstName @submission.Student?.LastName</td>
@@ -31,12 +32,46 @@
                         <a href="~/@submission.FilePath" target="_blank">Download</a>
                     }
                 </td>
-                <td>@(submission.MarksObtained?.ToString() ?? "-")</td>
-                <td>@(submission.IsPassed.HasValue ? (submission.IsPassed.Value ? "Pass" : "Fail") : "-")</td>
                 <td>
-                    <a asp-action="GradeSubmission" asp-route-id="@submission.Id" class="btn btn-sm btn-primary">
-                        <i class="bi bi-pencil"></i> Grade
-                    </a>
+                    @if (isGraded)
+                    {
+                        <strong>@submission.MarksObtained</strong>
+                    }
+                    else
+                    {
+                        <span class="text-muted">-</span>
+                    }
+                </td>
+                <td>
+                    @if (isGraded)
+                    {
+                        @if (submission.IsPassed == true)
+                        {
+                            <span class="badge bg-success">Passed</span>
+                        }
+                        else if (submission.IsPassed == false)
+                        {
+                            <span class="badge bg-danger">Failed</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">Pending to Grade</span>
+                    }
+                </td>
+                <td>
+                    @if (!isGraded)
+                    {
+                        <a asp-action="GradeSubmission" asp-route-id="@submission.Id" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i> Grade
+                        </a>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-secondary" disabled title="Already Graded">
+                            <i class="bi bi-check-circle"></i> Graded
+                        </button>
+                    }
                 </td>
             </tr>
         }

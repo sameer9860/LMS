@@ -214,7 +214,8 @@ public class StudentController : Controller
 
         await LogAsync(ActivityType.StartAssignment, assign.CourseId.ToString(), id.ToString());
 
-        return View(assign);
+        // Redirect to course assignments tab instead of showing a separate view
+        return RedirectToAction("CourseDetails", new { id = assign.CourseId, tab = "assignments" });
     }
 
     // ---------------------- SUBMIT ASSIGNMENT ------------------------
