@@ -1,3 +1,6 @@
+@using System.Security.Claims
+@inject LMS.Views.Data.ApplicationDbContext _context
+
 @{
     Layout = null;
     ViewBag.Title = "Dashboard";
@@ -5,7 +8,48 @@
     var isAdmin = User?.IsInRole("Admin") == true;
     var isInstructor = User?.IsInRole("Instructor") == true;
     var isStudent = User?.IsInRole("Student") == true;
-    var userName = User?.Identity?.Name ?? "User";
+
+    var userName = User.Identity?.Name ?? "Admin";
+    var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+    var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+    int userId = 0;
+    int.TryParse(userIdClaim, out userId);
+
+    string displayName = userName;
+    string profileImg = "/Images/admin.png"; // Default fallback
+
+    if (userRole == "Instructor")
+    {
+        var instructor = _context.Instructors.FirstOrDefault(i => i.UserId == userId);
+        if (instructor != null)
+        {
+            displayName = $"{instructor.FirstName} {instructor.LastName}";
+            if (!string.IsNullOrEmpty(instructor.ProfileImagePath))
+            {
+                profileImg = "/" + instructor.ProfileImagePath;
+            }
+            else
+            {
+                profileImg = "/Images/default-avatar.png"; // We'll handle this path
+            }
+        }
+    }
+    else if (userRole == "Student")
+    {
+        var student = _context.Students.FirstOrDefault(s => s.UserId == userId);
+        if (student != null)
+        {
+            displayName = $"{student.FirstName} {student.LastName}";
+            if (!string.IsNullOrEmpty(student.ProfileImagePath))
+            {
+                profileImg = "/" + student.ProfileImagePath;
+            }
+            else
+            {
+                profileImg = "/Images/default-avatar.png";
+            }
+        }
+    }
 }
 
 <!DOCTYPE html>
@@ -24,41 +68,22 @@
     <link href="~/css/theme.css" rel="stylesheet" />
 
     <style>
-        :root {
-            --sidebar-width: 260px;
-            --sidebar-collapsed-width: 70px;
-            --topbar-height: 64px;
-            --sidebar-bg: #f8f9fa;
-            --sidebar-color: #212529;
-            --sidebar-active-bg: #0d6efd;
-            --sidebar-active-color: #ffffff;
-            --body-bg: #f3f4f6;
-            --card-box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-
+        /* Layout Specific Adjustments */
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--body-bg);
-            margin: 0;
-            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
 
-        /* Sidebar Styles */
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             height: 100vh;
             width: var(--sidebar-width);
-            background-color: var(--sidebar-bg);
-            color: var(--sidebar-color);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(0,0,0,0.1);
         }
 
         .sidebar-header {
@@ -68,17 +93,12 @@
             justify-content: center;
             font-weight: 700;
             font-size: 1.5rem;
-            color: var(--sidebar-color);
             letter-spacing: 1px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
         }
 
         .user-panel {
             padding: 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            background: rgba(0,0,0,0.05);
-            color: var(--sidebar-color);
         }
 
         .user-panel img {
@@ -87,10 +107,18 @@
             border-radius: 50%;
             border: 3px solid rgba(0,0,0,0.1);
             margin-bottom: 10px;
+            object-fit: cover;
         }
 
+        .user-dropdown img {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+        }
+        
+        .smaller { font-size: 0.75rem; }
+
         .nav-link {
-            color: var(--sidebar-color);
             padding: 12px 20px;
             display: flex;
             align-items: center;
@@ -100,24 +128,6 @@
             margin: 4px 0;
         }
 
-        .nav-link:hover, .nav-link:focus {
-            background-color: rgba(13, 110, 253, 0.1);
-            color: var(--sidebar-active-color);
-        }
-
-        .nav-link.active {
-            background-color: var(--sidebar-active-bg);
-            color: var(--sidebar-active-color);
-            border-left-color: var(--sidebar-active-bg);
-        }
-
-        .nav-link i {
-            width: 20px;
-            text-align: center;
-            font-size: 1.1rem;
-        }
-
-        /* Main Content Area */
         .main-content {
             margin-left: var(--sidebar-width);
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -126,11 +136,7 @@
             flex-direction: column;
         }
 
-        /* Topbar */
         .topbar {
-            height: var(--topbar-height);
-            background: var(--theme-bg-primary);
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -179,13 +185,6 @@
                 background: rgba(0,0,0,0.4); 
                 z-index: 1035; 
             }
-        }
-
-        .hover-lift {
-            transition: transform 0.2s;
-        }
-        .hover-lift:hover {
-            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -330,12 +329,17 @@
                     <div class="dropdown user-dropdown ms-2">
                         <a class="dropdown-toggle d-flex align-items-center text-dark text-decoration-none" href="#"
                             id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="~/Images/admin.png" class="rounded-circle me-2" />
-                            @userName
+                            <div class="profile-img-container me-2">
+                                <img src="@profileImg" class="rounded-circle" onerror="this.src='/Images/admin.png'; this.onerror=null;" />
+                            </div>
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold lh-1 small">@displayName</span>
+                                <span class="text-muted smaller">@userRole</span>
+                            </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="@Url.Action("Profile", "Account")"><i
-                                        class="fas fa-user me-2"></i> Profile</a></li>
+                             <li><a class="dropdown-item" href="@Url.Action("Profile", "Account")"><i
+                                         class="fas fa-user-circle me-2"></i> My Profile</a></li>
                             <li><a class="dropdown-item" href="@Url.Action("Settings", "Account")"><i
                                         class="fas fa-cog me-2"></i> Settings</a></li>
                             <li><a class="dropdown-item" href="@Url.Action("Support", "Account")"><i

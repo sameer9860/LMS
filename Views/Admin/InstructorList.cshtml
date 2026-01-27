@@ -9,7 +9,7 @@
 
 <!-- Filter Card -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
+    <div class="card-header">
         <i class="bi bi-funnel me-2"></i> Filter Instructors
     </div>
     <div class="card-body">
@@ -57,7 +57,7 @@
 
 <div class="table-responsive shadow-sm rounded">
 <table class="table table-bordered table-striped align-middle mb-0">
-    <thead class="table-dark">
+    <thead>
         <tr>
             <th class="text-nowrap">S.N.</th>
             <th class="text-nowrap">Full Name</th>
@@ -149,19 +149,12 @@
         @if (TempData["Success"] != null)
             {
                 <text>
-                    Swal.fire({
-                        icon: 'success',
+                Swal.fire({
+                    icon: 'success',
                     title: 'Success',
-                     text: '@TempData["Success"]',
-                    background: '#d4edda', // green background
-                    color: '#155724',       // green text
-                    confirmButtonColor: '#28a745', // Bootstrap success green
-                    customClass: {
-                        popup: 'border border-success'
-                                            }
-                                        });
-
-                </text>
+                    text: '@TempData["Success"]'
+                });
+            </text>
         }
 
 
@@ -171,14 +164,8 @@
                     Swal.fire({
                         icon: 'success',
                     title: 'Success',
-                     text: '@TempData["SuccessMessage"]',
-                    background: '#d4edda', // green background
-                    color: '#155724',       // green text
-                    confirmButtonColor: '#28a745', // Bootstrap success green
-                    customClass: {
-                        popup: 'border border-success'
-                                            }
-                                        });
+                     text: '@TempData["SuccessMessage"]'
+                });
 
                 </text>
         }
@@ -188,16 +175,10 @@
             {
                 <text>
                     Swal.fire({
-                        icon: 'Delete',
-                    title: 'Delete',
-                    text: 'Deleted Successfully',
-                    background: '#f8d7da', // red background
-                    color: '#721c24',       // red text
-                    confirmButtonColor: '#dc3545', // Bootstrap danger red
-                    customClass: {
-                        popup: 'border border-danger'
-                                            }
-                                        });
+                        icon: 'error',
+                        title: 'Error',
+                        text: '@TempData["ErrorMessage"]'
+                    });
 
                 </text>
         }

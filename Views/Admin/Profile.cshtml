@@ -1,0 +1,62 @@
+@model LMS.Models.User
+
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+    ViewBag.Title = "My Profile";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-header bg-gradient-dark text-white p-4">
+            <h3 class="mb-0">Administrator Profile</h3>
+        </div>
+        <div class="card-body p-4 row">
+            <div class="col-md-4 text-center border-end">
+                <div class="position-relative d-inline-block">
+                    <img src="/Images/admin.png" 
+                         class="img-thumbnail rounded-circle mb-3 shadow-sm" style="width: 200px; height: 200px; object-fit: cover;" 
+                         alt="Admin Profile" />
+                </div>
+                <h4 class="fw-bold mt-3">@Model.Username</h4>
+                <p class="text-muted small">System Administrator</p>
+                <span class="badge bg-dark px-3 py-2 rounded-pill">Admin Role</span>
+            </div>
+            <div class="col-md-8">
+                <div class="ps-md-4">
+                    <h5 class="text-uppercase letter-spacing-1 small fw-bold text-muted mb-4">System Details</h5>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="small text-muted mb-1">Username</label>
+                            <p class="fw-medium">@Model.Username</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="small text-muted mb-1">Access Level</label>
+                            <p class="fw-medium text-danger">Full System Access (Superadmin)</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="small text-muted mb-1">Account Role</label>
+                            <p class="fw-medium">@Model.Role</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="small text-muted mb-1">Account ID</label>
+                            <p class="fw-medium">SYS-USR-00@Model.Id</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 opacity-50" />
+
+                    <div class="alert alert-warning border-0 shadow-sm">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        <strong>Security Note:</strong> You are logged in with administrative privileges. Ensure your password is secure and logout after performing system maintenance.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-light p-3 text-end">
+            <a asp-action="Settings" asp-controller="Account" class="btn btn-dark px-4 me-2">
+                <i class="fas fa-cog me-2"></i> Settings
+            </a>
+            <a asp-action="Dashboard" class="btn btn-outline-secondary">Back to Console</a>
+        </div>
+    </div>
+</div>

@@ -9,7 +9,7 @@
 
 <!-- Filter Card -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
+    <div class="card-header">
         <i class="bi bi-funnel me-2"></i> Filter Students
     </div>
     <div class="card-body">
@@ -57,7 +57,7 @@
 
 <div class="table-responsive shadow-sm rounded">
 <table class="table table-bordered table-striped align-middle mb-0">
-    <thead class="table-dark">
+    <thead>
         <tr>
             <th class="text-nowrap">S.N.</th>
             <th class="text-nowrap">Full Name</th>
@@ -145,11 +145,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Success',
-                    text: '@TempData["Success"]',
-                    background: '#d4edda',
-                    color: '#155724',
-                    confirmButtonColor: '#28a745',
-                    customClass: { popup: 'border border-success' }
+                    text: '@TempData["Success"]'
                 });
             </text>
         }
@@ -159,11 +155,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Success',
-                    text: '@TempData["SuccessMessage"]',
-                    background: '#d4edda',
-                    color: '#155724',
-                    confirmButtonColor: '#28a745',
-                    customClass: { popup: 'border border-success' }
+                    text: '@TempData["SuccessMessage"]'
                 });
             </text>
         }
@@ -174,12 +166,8 @@
             <text>
                 Swal.fire({
                     icon: 'error',
-                    title: 'Deleted',
-                    text: '@TempData["ErrorMessage"]',
-                    background: '#f8d7da',
-                    color: '#721c24',
-                    confirmButtonColor: '#dc3545',
-                    customClass: { popup: 'border border-danger' }
+                    title: 'Error',
+                    text: '@TempData["ErrorMessage"]'
                 });
             </text>
         }

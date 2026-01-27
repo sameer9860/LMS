@@ -3,134 +3,76 @@
     var today = DateTime.Now.ToString("dddd, MMMM dd, yyyy");
 }
 
-<style>
-    body {
-        background-color: #f1f5f9;
-    }
-
-    a.card:hover {
-        background-color: #1eaf3d;
-        color: #822849;
-        text-decoration: none;
-    }
-
-    .hover-lift {
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-
-    .hover-lift:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 25px rgba(0,0,0,0.08) !important;
-    }
-
-    .letter-spacing-1 {
-        letter-spacing: 1px;
-    }
-
-    .opacity-75 {
-        opacity: 0.75;
-    }
-
-    .dashboard-card {
-        border-radius: 14px;
-        background: #ffffff;
-    }
-
-    .chart-wrapper {
-        height: 320px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .section-title {
-        font-size: 0.75rem;
-        letter-spacing: 1.5px;
-        color: #64748b;
-        font-weight: 700;
-    }
-</style>
-
-<div class="container py-4">
-
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-md-4">
-            <a href="@Url.Action("Course", "Instructor")" class="text-decoration-none">
-                <div class="card dashboard-card hover-lift shadow-sm text-center h-100"
-                     style="background: linear-gradient(135deg,#3b82f6,#2563eb); color:#fff;">
-                    <div class="card-body py-4">
-                        <i class="fas fa-book fa-3x mb-3 opacity-75"></i>
-                        <div class="section-title text-white">TOTAL COURSES</div>
-                        <div class="display-5 fw-bold">@ViewBag.TotalCourses</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-12 col-md-4">
-            <div class="card dashboard-card hover-lift shadow-sm text-center h-100"
-                 style="background: linear-gradient(135deg,#ef4444,#dc2626); color:#fff;">
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+        <a href="@Url.Action("Course", "Instructor")" class="text-decoration-none">
+            <div class="card bg-gradient-primary hover-lift text-center h-100">
                 <div class="card-body py-4">
-                    <i class="fas fa-users fa-3x mb-3 opacity-75"></i>
-                    <div class="section-title text-white">TOTAL STUDENTS</div>
-                    <div class="display-5 fw-bold">@ViewBag.TotalEnrolledStudents</div>
+                    <i class="fas fa-book fa-3x mb-3 opacity-75"></i>
+                    <div class="section-title text-white">TOTAL COURSES</div>
+                    <div class="display-5 fw-bold">@ViewBag.TotalCourses</div>
                 </div>
             </div>
-        </div>
+        </a>
+    </div>
 
-        <div class="col-12 col-md-4">
-            <div class="card dashboard-card hover-lift shadow-sm text-center h-100">
-                <div class="card-body py-4">
-                    <i class="fas fa-calendar-alt fa-3x mb-3 text-primary"></i>
-                    <div class="section-title">TODAY</div>
-                    <div class="fw-semibold text-dark">@today</div>
+    <div class="col-12 col-md-4">
+        <div class="card bg-gradient-danger hover-lift text-center h-100">
+            <div class="card-body py-4">
+                <i class="fas fa-users fa-3x mb-3 opacity-75"></i>
+                <div class="section-title text-white">TOTAL STUDENTS</div>
+                <div class="display-5 fw-bold">@ViewBag.TotalEnrolledStudents</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="card hover-lift text-center h-100">
+            <div class="card-body py-4">
+                <i class="fas fa-calendar-alt fa-3x mb-3 text-primary"></i>
+                <div class="section-title">TODAY</div>
+                <div class="fw-semibold">@today</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Charts -->
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-center section-title mb-3">TOP ACTIVE STUDENTS</div>
+                <div class="chart-wrapper">
+                    <canvas id="topStudentChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Top Charts -->
-    <div class="row g-4">
-        <!-- Top Active Students -->
-        <div class="col-12 col-lg-6">
-            <div class="card dashboard-card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-center section-title mb-3">TOP ACTIVE STUDENTS</div>
-                    <div class="chart-wrapper">
-                        <canvas id="topStudentChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Top Active Courses -->
-        <div class="col-12 col-lg-6">
-            <div class="card dashboard-card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-center section-title mb-3">TOP ACTIVE COURSES</div>
-                    <div class="chart-wrapper">
-                        <canvas id="topCourseChart"></canvas>
-                    </div>
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-center section-title mb-3">TOP ACTIVE COURSES</div>
+                <div class="chart-wrapper">
+                    <canvas id="topCourseChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Students Activity -->
-    <div class="row justify-content-center mt-4 mb-5">
-        <div class="col-12 col-md-8 col-lg-6">
-            <div class="card dashboard-card shadow-sm">
-                <div class="card-body">
-                    <div class="text-center section-title mb-3">STUDENTS ACTIVITY</div>
-                    <div class="chart-wrapper">
-                        <canvas id="studentActivityChart"></canvas>
-                    </div>
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center section-title mb-3">STUDENTS ACTIVITY</div>
+                <div class="chart-wrapper">
+                    <canvas id="studentActivityChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
 
 @section Scripts {

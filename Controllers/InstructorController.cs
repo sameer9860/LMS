@@ -1316,4 +1316,16 @@ public class InstructorController : Controller
     }
 
 
+    public async Task<IActionResult> Profile()
+    {
+        var username = User.Identity?.Name;
+        var instructor = await _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefaultAsync(i => i.User!.Username == username);
+
+        if (instructor == null)
+            return NotFound();
+
+        return View(instructor);
+    }
 }

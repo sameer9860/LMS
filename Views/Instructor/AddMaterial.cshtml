@@ -6,7 +6,7 @@
 
 <h3 class="mb-3">Upload Course Material</h3>
 
-<form asp-action="AddMaterial" method="post" enctype="multipart/form-data" class="shadow p-4 bg-light rounded">
+<form asp-action="AddMaterial" method="post" enctype="multipart/form-data" class="p-4 card rounded shadow-sm">
     <input type="hidden" asp-for="CourseId" />
 
     <div class="mb-3">
@@ -44,13 +44,7 @@
             Swal.fire({
                 icon: 'success',
                 title: 'Success',
-                text: '@TempData["SuccessMaterials"]',
-                background: '#d4edda',
-                color: '#155724',
-                confirmButtonColor: '#28a745',
-                customClass: {
-                    popup: 'border border-success'
-                }
+                text: '@TempData["SuccessMaterials"]'
             });
         </script>
     }

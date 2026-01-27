@@ -286,4 +286,14 @@ public async Task<IActionResult> InstructorProfile(int id)
 
     return View(instructor);
 }
+
+    [HttpGet]
+    public IActionResult Profile()
+    {
+        var username = User.Identity?.Name;
+        var admin = _dbContext.Users.FirstOrDefault(u => u.Username == username);
+        if (admin == null) return NotFound();
+
+        return View(admin);
+    }
 }

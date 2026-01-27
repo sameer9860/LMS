@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using LMS.Views.Data;
 using LMS.Models;
+using LMS.ViewModels;
 
 namespace LMS.Controllers
 {
@@ -99,6 +100,62 @@ namespace LMS.Controllers
                 "Student" => RedirectToAction("Dashboard", "Student"),
                 _ => RedirectToAction("Login")
             };
+        }
+
+        // ============================
+        // GET: /Account/Profile
+        // ============================
+        [HttpGet]
+        public IActionResult Profile()
+        {
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            return role switch
+            {
+                "Admin" => RedirectToAction("Profile", "Admin"),
+                "Instructor" => RedirectToAction("Profile", "Instructor"),
+                "Student" => RedirectToAction("Profile", "Student"),
+                _ => RedirectToAction("Login")
+            };
+        }
+
+        // ============================
+        // GET: /Account/Settings
+        // ============================
+        [HttpGet]
+        public IActionResult Settings()
+        {
+            return View();
+        }
+
+        // ============================
+        // POST: /Account/ChangePassword
+        // ============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View("Settings", model);
+
+            var username = User.Identity?.Name;
+            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+
+            if (user == null)
+                return Unauthorized();
+
+            if (user.Password != model.OldPassword)
+            {
+                ModelState.AddModelError("OldPassword", "The current password you entered is incorrect.");
+                return View("Settings", model);
+            }
+
+            user.Password = model.NewPassword;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Your password has been changed successfully!";
+            TempData["PasswordChanged"] = true; // Flag for JS redirection
+            return RedirectToAction("Settings");
         }
 
         // ============================

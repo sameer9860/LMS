@@ -296,4 +296,19 @@ public class StudentController : Controller
 
         return View(submissions);
     }
+
+    // ---------------------- PROFILE ------------------------
+    public async Task<IActionResult> Profile()
+    {
+        var username = User.Identity?.Name;
+        var student = await _dbContext.Students
+            .Include(s => s.User)
+            .Include(s => s.Instructor)
+            .FirstOrDefaultAsync(s => s.User!.Username == username);
+
+        if (student == null)
+            return NotFound();
+
+        return View(student);
+    }
 }

@@ -14,16 +14,15 @@
 <div class="container mt-2">
     <!-- ✅ Breadcrumb with icons -->
     <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb bg-light px-3 py-2 rounded shadow-sm align-items-center">
+        <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <i class="fas fa-book"></i>
                 <a href="@Url.Action("Course", "Instructor")"> My Courses</a>
             </li>
             <li class="breadcrumb-item">
-                <i class="fas fa-graduation-cap"></i>
                 @Model.Course?.FullName
             </li>
-            <li class="breadcrumb-item active text-primary" id="activeTabLabel">
+            <li class="breadcrumb-item active" id="activeTabLabel">
                 <i class="fas fa-info-circle"></i> Course
             </li>
         </ol>
@@ -121,8 +120,8 @@
             @if (Model.Enrollments != null && Model.Enrollments.Any())
             {
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped align-middle text-center">
-                        <thead class="table-light">
+                    <table class="table table-striped align-middle text-center">
+                        <thead>
                             <tr>
                                 <th class="text-nowrap">S.N.</th>
                                 <th class="text-nowrap">Full Name</th>
@@ -346,12 +345,12 @@
 
 @* chat tab *@
 <div class="tab-pane fade" id="chat" role="tabpanel">
-    <div class="card">
-        <div class="card-header bg-info text-dark">
+    <div class="card overflow-hidden">
+        <div class="card-header bg-gradient-info">
             <i class="fas fa-comments"></i> Course Chat
         </div>
 
-        <div class="card-body" style="height:400px; overflow-y:auto; background:#f9f9f9;" id="chatWindow">
+        <div class="card-body" style="height:400px; overflow-y:auto;" id="chatWindow">
             @foreach (var msg in chatMessages)
             {
                 var isSender = msg.User!.Username == User.Identity!.Name;
@@ -598,62 +597,6 @@
     </div>
 </div> 
 
-<style>
-    .tab-content h5 {
-        margin-top: 1rem;
-    }
-
-    .list-group-item {
-        font-size: 0.95rem;
-    }
-
-    .breadcrumb i {
-        margin-right: 4px;
-    }
-
-    .card-title {
-        font-weight: 600;
-        font-size: 1rem;
-    }
-
-    .card-footer .btn {
-        width: 48%;
-    }
-
-    .btn-info {
-        background-color: #17a2b8;
-        border-color: #17a2b8;
-    }
-
-    /* Chat bubble styles */
-    #chatWindow div.message {
-        max-width: 70%;
-        padding: 8px 12px;
-        margin: 5px 0;
-        border-radius: 15px;
-        clear: both;
-        word-wrap: break-word;
-    }
-
-    #chatWindow div.message.sender {
-        background-color: #007bff;
-        color: white;
-        margin-left: auto; /* right side */
-        text-align: right;
-    }
-
-    #chatWindow div.message.receiver {
-        background-color: #f1f1f1;
-        color: black;
-        margin-right: auto; /* left side */
-        text-align: left;
-    }
-
-    #chatWindow {
-        display: flex;
-        flex-direction: column;
-    }
-</style>
 
 
 @section Scripts {
