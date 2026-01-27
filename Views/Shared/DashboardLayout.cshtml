@@ -20,15 +20,17 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Theme CSS -->
+    <link href="~/css/theme.css" rel="stylesheet" />
 
     <style>
         :root {
             --sidebar-width: 260px;
             --sidebar-collapsed-width: 70px;
             --topbar-height: 64px;
-            --sidebar-bg: #1e293b;
-            --sidebar-color: #cbd5e1;
-            --sidebar-active-bg: #3b82f6;
+            --sidebar-bg: #f8f9fa;
+            --sidebar-color: #212529;
+            --sidebar-active-bg: #0d6efd;
             --sidebar-active-color: #ffffff;
             --body-bg: #f3f4f6;
             --card-box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -56,7 +58,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.05);
+            border-right: 1px solid rgba(0,0,0,0.1);
         }
 
         .sidebar-header {
@@ -66,23 +68,24 @@
             justify-content: center;
             font-weight: 700;
             font-size: 1.5rem;
-            color: #fff;
+            color: var(--sidebar-color);
             letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
         }
 
         .user-panel {
             padding: 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            background: rgba(0,0,0,0.1);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.05);
+            color: var(--sidebar-color);
         }
 
         .user-panel img {
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.2);
+            border: 3px solid rgba(0,0,0,0.1);
             margin-bottom: 10px;
         }
 
@@ -98,12 +101,12 @@
         }
 
         .nav-link:hover, .nav-link:focus {
-            background-color: rgba(255,255,255,0.05);
-            color: #fff;
+            background-color: rgba(13, 110, 253, 0.1);
+            color: var(--sidebar-active-color);
         }
 
         .nav-link.active {
-            background-color: rgba(59, 130, 246, 0.1);
+            background-color: var(--sidebar-active-bg);
             color: var(--sidebar-active-color);
             border-left-color: var(--sidebar-active-bg);
         }
@@ -126,7 +129,7 @@
         /* Topbar */
         .topbar {
             height: var(--topbar-height);
-            background: #fff;
+            background: var(--theme-bg-primary);
             box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
             display: flex;
             align-items: center;
@@ -140,13 +143,13 @@
         .toggle-btn {
             background: transparent;
             border: none;
-            color: #475569;
+            color: var(--theme-text-secondary);
             font-size: 1.25rem;
             cursor: pointer;
             padding: 4px;
             border-radius: 4px;
         }
-        .toggle-btn:hover { background: #f1f5f9; }
+        .toggle-btn:hover { background: var(--theme-bg-secondary); }
 
         .content-area {
             padding: 24px;
@@ -460,6 +463,15 @@ loadNotifications();
 }
 
     </script>
+    
+    <!-- Theme Toggle Script -->
+    <script src="~/js/theme-toggle.js"></script>
+    
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <i class="fas fa-moon"></i>
+    </button>
+    
     @RenderSection("Scripts", required: false)
 </body>
 

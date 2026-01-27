@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/LMS.styles.css" asp-append-version="true" />
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="~/css/theme.css" />
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
     <header>
@@ -45,6 +49,12 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <!-- Theme Toggle Script -->
+    <script src="~/js/theme-toggle.js"></script>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <i class="fas fa-moon"></i>
+    </button>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
