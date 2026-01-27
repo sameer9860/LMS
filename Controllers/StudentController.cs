@@ -93,6 +93,7 @@ public class StudentController : Controller
             .Include(c => c.Materials)
             .Include(c => c.ChatMessages!).ThenInclude(m => m.User)
             .Include(c => c.LiveClasses)
+            .Include(c => c.Quizzes)
             .FirstOrDefault(c => c.Id == id);
 
         if (course == null)

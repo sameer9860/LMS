@@ -8,6 +8,7 @@
     <h2 class="mb-4">@Model.Title</h2>
 
     <form id="quizForm">
+        @Html.AntiForgeryToken()
         <input type="hidden" id="quizId" value="@Model.QuizId" />
 
         @for (int i = 0; i < Model.MCQs.Count; i++)
@@ -20,14 +21,14 @@
                     @for (int j = 0; j < question.Options.Count; j++)
                     {
                         var option = question.Options[j];
-                        var inputId = $"q{i}_option{j}";
+                        var inputId = $"q{question.Id}_option{j}";
                         <div class="form-check mb-2">
                             <input class="form-check-input quiz-answer" 
                                    type="radio" 
                                    id="@inputId" 
-                                   name="question_@i" 
+                                   name="question_@question.Id" 
                                    value="@option"
-                                   data-question-id="@i"
+                                   data-question-id="@question.Id"
                                    required />
                             <label class="form-check-label" for="@inputId">
                                 @option
@@ -58,14 +59,15 @@ document.getElementById('submitBtn').addEventListener('click', async function() 
 
     @for (int i = 0; i < Model.MCQs.Count; i++)
     {
+        var mcqId = Model.MCQs[i].Id;
         <text>
-        const selected_</text>@i<text> = document.querySelector('input[name="question_</text>@i<text>"]:checked');
+        const selected_</text>@i<text> = document.querySelector('input[name="question_</text>@mcqId<text>"]:checked');
         if (!selected_</text>@i<text>) {
             allAnswered = false;
         } else {
             answers.push({
-                mcqId: </text>@(i + 1)<text>,
-                answer: selected_</text>@i<text>.value
+                MCQId: </text>@mcqId<text>,
+                Answer: selected_</text>@i<text>.value
             });
         }
         </text>
@@ -96,8 +98,8 @@ document.getElementById('submitBtn').addEventListener('click', async function() 
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                quizId: parseInt(document.getElementById('quizId').value),
-                answers: answers
+                QuizId: parseInt(document.getElementById('quizId').value),
+                Answers: answers
             })
         });
 

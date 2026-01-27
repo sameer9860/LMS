@@ -7,6 +7,7 @@
     <h4>Edit Quiz</h4>
 
     <form asp-action="EditQuiz" method="post">
+        @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="CourseId" />
         <input type="hidden" asp-for="Type" />

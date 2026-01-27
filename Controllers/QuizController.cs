@@ -27,14 +27,14 @@ namespace LMS.Controllers
         }
 
         // ================= Auto Quiz =================
-        [HttpGet]
+        [HttpGet("AutoQuiz")]
         public IActionResult AutoQuiz(int courseId)
         {
             var model = new QuizViewModel { CourseId = courseId, Type = QuizType.AI };
             return View(model);
         }
 
-        [HttpPost]
+        [HttpPost("AutoQuiz")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AutoQuiz(QuizViewModel model)
         {
@@ -73,7 +73,7 @@ namespace LMS.Controllers
         }
 
         // ================= Manual Quiz =================
-        [HttpGet]
+        [HttpGet("ManualQuiz")]
         public IActionResult ManualQuiz(int courseId)
         {
             var model = new QuizViewModel 
@@ -85,7 +85,7 @@ namespace LMS.Controllers
             return View(model);
         }
 
-        [HttpPost]
+        [HttpPost("ManualQuiz")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ManualQuiz(QuizViewModel model)
         {
@@ -161,7 +161,7 @@ namespace LMS.Controllers
         }
 
         // ================= View Quiz =================
-        [HttpGet]
+        [HttpGet("ViewQuiz")]
         public async Task<IActionResult> ViewQuiz(int quizId)
         {
             var quiz = await _dbContext.Quizzes
@@ -192,6 +192,7 @@ namespace LMS.Controllers
         }
 
         // ================= Take Quiz =================
+        [HttpGet]
         [Route("[action]/{id}")]
         [Route("[action]")]
         public async Task<IActionResult> TakeQuiz(int id)
@@ -210,6 +211,7 @@ namespace LMS.Controllers
 
                 return new QuizTakeViewModel
                 {
+                    Id = q.Id,
                     Question = q.Question!,
                     Options = options.OrderBy(x => Guid.NewGuid()).ToList(),
                     CorrectAnswer = q.CorrectAnswer!,
@@ -228,7 +230,7 @@ namespace LMS.Controllers
         }
 
         // ================= Submit Quiz =================
-        [HttpPost]
+        [HttpPost("SubmitQuiz")]
         public async Task<IActionResult> SubmitQuiz([FromBody] QuizSubmissionViewModel model)
         {
             if (model == null || model.QuizId == 0)
@@ -277,11 +279,18 @@ namespace LMS.Controllers
                 StudentId = student.Id,
                 SubmittedAt = DateTime.Now,
                 Score = correctAnswers,
-                TotalQuestions = quiz.MCQs.Count,
-                Answers = answers
+                TotalQuestions = quiz.MCQs.Count
             };
 
             _dbContext.QuizSubmissions.Add(submission);
+            await _dbContext.SaveChangesAsync();
+
+            // Now set the QuizSubmissionId for all answers and add them
+            foreach (var answer in answers)
+            {
+                answer.QuizSubmissionId = submission.Id;
+            }
+            _dbContext.QuizAnswers.AddRange(answers);
             await _dbContext.SaveChangesAsync();
 
             // Calculate percentage
@@ -298,7 +307,7 @@ namespace LMS.Controllers
         }
 
         // ================= View Quiz Result =================
-        [HttpGet]
+        [HttpGet("QuizResult")]
         public async Task<IActionResult> QuizResult(int submissionId)
         {
             var submission = await _dbContext.QuizSubmissions
@@ -348,7 +357,7 @@ namespace LMS.Controllers
         }
 
         // ================= Delete Quiz =================
-        [HttpPost]
+        [HttpPost("DeleteQuiz")]
         public async Task<IActionResult> DeleteQuiz(int quizId)
         {
             var quiz = await _dbContext.Quizzes
@@ -379,8 +388,16 @@ namespace LMS.Controllers
                     .ToList();
                 _dbContext.Notifications.RemoveRange(notifications);
 
-                // Remove all quiz submissions
-                var submissions = _dbContext.QuizSubmissions.Where(s => s.QuizId == quizId).ToList();
+                // Remove all quiz submissions and their answers
+                var submissions = _dbContext.QuizSubmissions
+                    .Include(s => s.Answers)
+                    .Where(s => s.QuizId == quizId)
+                    .ToList();
+
+                foreach (var submission in submissions)
+                {
+                    _dbContext.QuizAnswers.RemoveRange(submission.Answers);
+                }
                 _dbContext.QuizSubmissions.RemoveRange(submissions);
 
                 // Remove the quiz (MCQs will be removed by cascade delete)
@@ -396,7 +413,7 @@ namespace LMS.Controllers
         }
 
         // ================= Edit Quiz (GET) =================
-        [HttpGet]
+        [HttpGet("EditQuiz")]
         public async Task<IActionResult> EditQuiz(int quizId)
         {
             var quiz = await _dbContext.Quizzes
@@ -445,7 +462,7 @@ namespace LMS.Controllers
         }
 
         // ================= Edit Quiz (POST) =================
-        [HttpPost]
+        [HttpPost("EditQuiz")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditQuiz(QuizViewModel model)
         {
@@ -532,6 +549,7 @@ namespace LMS.Controllers
 
     public class QuizTakeViewModel
     {
+        public int Id { get; set; }
         public string Question { get; set; } = string.Empty;
         public List<string> Options { get; set; } = new();
         public string CorrectAnswer { get; set; } = string.Empty;

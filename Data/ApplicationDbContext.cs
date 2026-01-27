@@ -51,6 +51,13 @@ namespace LMS.Views.Data
             modelBuilder.Entity<ActivityLog>()
                 .HasIndex(a => new { a.ActivityType, a.Timestamp });
 
+            // Configure cascade delete for QuizAnswer
+            modelBuilder.Entity<QuizAnswer>()
+                .HasOne(qa => qa.Submission)
+                .WithMany(qs => qs.Answers)
+                .HasForeignKey(qa => qa.QuizSubmissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             base.OnModelCreating(modelBuilder);
         }
     }

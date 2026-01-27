@@ -395,11 +395,11 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-action="ViewQuiz" asp-route-quizId="@quiz.Id"
+                        <a asp-controller="Quiz" asp-action="ViewQuiz" asp-route-quizId="@quiz.Id"
                            class="btn btn-success btn-sm">
                             <i class="fas fa-question-circle"></i> View
                         </a>
-                        <a asp-action="EditQuiz" asp-route-quizId="@quiz.Id"
+                        <a asp-controller="Quiz" asp-action="EditQuiz" asp-route-quizId="@quiz.Id"
                            class="btn btn-warning btn-sm">
                             <i class="fas fa-edit"></i> Edit
                         </a>
@@ -463,10 +463,12 @@ async function deleteQuiz() {
     if (!quizIdToDelete) return;
 
     try {
-        const response = await fetch(`/Quiz/DeleteQuiz/${quizIdToDelete}`, {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const response = await fetch(`/Quiz/DeleteQuiz?quizId=${quizIdToDelete}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
             }
         });
 
