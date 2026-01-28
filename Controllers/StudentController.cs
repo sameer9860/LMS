@@ -263,6 +263,36 @@ public class StudentController : Controller
             _dbContext.AssignmentSubmissions.Add(submission);
             await _dbContext.SaveChangesAsync();
 
+            // Get assignment and course details to notify instructor
+            var assignment = _dbContext.Assignments
+                .Include(a => a.Course)
+                .FirstOrDefault(a => a.Id == AssignmentId);
+
+            if (assignment?.Course != null)
+            {
+                var instructor = _dbContext.Instructors
+                    .Include(i => i.User)
+                    .FirstOrDefault(i => i.id == assignment.Course.Instructorid);
+
+                if (instructor?.User != null)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = instructor.User.Id,
+                        Title = "New Assignment Submission",
+                        Message = $"Student {student.FirstName} {student.LastName} submitted the assignment \"{assignment.Title}\".",
+                        NotificationType = "assignment_submission",
+                        RelatedId = submission.Id,
+                        IconClass = "fas fa-file-upload",
+                        ActionUrl = $"/Instructor/ViewSubmissions?assignmentId={AssignmentId}",
+                        CreatedAt = DateTime.Now,
+                        IsRead = false
+                    };
+                    _dbContext.Notifications.Add(notification);
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
             await LogAsync(ActivityType.SubmitAssignment, submission.AssignmentId.ToString(), submission.Id.ToString());
 
             TempData["SuccessAssignment"] = "Assignment submitted!";

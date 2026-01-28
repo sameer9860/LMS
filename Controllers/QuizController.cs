@@ -359,6 +359,36 @@ namespace LMS.Controllers
             _dbContext.QuizAnswers.AddRange(answers);
             await _dbContext.SaveChangesAsync();
 
+            // Notify instructor about quiz submission
+            var quizWithCourse = await _dbContext.Quizzes
+                .Include(q => q.Course)
+                .FirstOrDefaultAsync(q => q.Id == model.QuizId);
+
+            if (quizWithCourse?.Course != null)
+            {
+                var instructor = await _dbContext.Instructors
+                    .Include(i => i.User)
+                    .FirstOrDefaultAsync(i => i.id == quizWithCourse.Course.Instructorid);
+
+                if (instructor?.User != null)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = instructor.User.Id,
+                        Title = "New Quiz Submission",
+                        Message = $"Student {student.FirstName} {student.LastName} submitted the quiz \"{quiz.Title}\" with a score of {correctAnswers}/{quiz.MCQs.Count}.",
+                        NotificationType = "quiz_submission",
+                        RelatedId = submission.Id,
+                        IconClass = "fas fa-check-square",
+                        ActionUrl = $"/Instructor/ViewQuizSubmissions?quizId={model.QuizId}",
+                        CreatedAt = DateTime.Now,
+                        IsRead = false
+                    };
+                    _dbContext.Notifications.Add(notification);
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
             // Calculate percentage
             double percentage = (correctAnswers * 100.0) / quiz.MCQs.Count;
 

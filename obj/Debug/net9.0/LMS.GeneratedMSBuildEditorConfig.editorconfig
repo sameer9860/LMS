@@ -120,6 +120,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW5zdHJ1Y3Rvci9TdHVkZW50UHJvZmlsZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/samir/E/Projects/LMS/Views/Instructor/ViewQuizSubmissions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW5zdHJ1Y3Rvci9WaWV3UXVpelN1Ym1pc3Npb25zLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/samir/E/Projects/LMS/Views/Instructor/ViewSubmissions.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW5zdHJ1Y3Rvci9WaWV3U3VibWlzc2lvbnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

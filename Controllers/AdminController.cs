@@ -116,6 +116,22 @@ public class AdminController : Controller
         _dbContext.Instructors.Add(instructor);
         await _dbContext.SaveChangesAsync();
 
+        // Create notification for the newly created instructor
+        var notification = new Notification
+        {
+            UserId = user.Id,
+            Title = "Welcome to LMS",
+            Message = $"Your instructor account has been created. Your username is: {model.Username}. Please log in to get started.",
+            NotificationType = "instructor_created",
+            RelatedId = instructor.id,
+            IconClass = "fas fa-user-tie",
+            ActionUrl = "/Home/Index",
+            CreatedAt = DateTime.Now,
+            IsRead = false
+        };
+        _dbContext.Notifications.Add(notification);
+        await _dbContext.SaveChangesAsync();
+
         TempData["SuccessMessage"] = "Instructor created successfully!";
         return RedirectToAction("InstructorList");
     }

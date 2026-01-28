@@ -1,0 +1,64 @@
+@model List<QuizSubmission>
+
+@{
+    ViewBag.Title = "Quiz Submissions";
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<h4>Quiz Submissions - @ViewBag.QuizTitle</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>S.N.</th>
+            <th>Student</th>
+            <th>Submitted At</th>
+            <th>Score</th>
+            <th>Percentage</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var submission in Model)
+        {
+            var score = submission.Score ?? 0;
+            var total = submission.TotalQuestions ?? 0;
+            var percentage = total > 0 
+                ? Math.Round((score * 100.0) / total, 2) 
+                : 0;
+            var isPassed = percentage >= 50; // Assuming 50% is passing
+            
+            <tr>
+                <td>@(Model.IndexOf(submission) + 1)</td>
+                <td>@submission.Student?.FirstName @submission.Student?.LastName</td>
+                <td>@submission.SubmittedAt.ToShortDateString()</td>
+                <td>
+                    <strong>@score / @total</strong>
+                </td>
+                <td>
+                    <strong>@percentage%</strong>
+                </td>
+                <td>
+                    @if (isPassed)
+                    {
+                        <span class="badge bg-success">Passed</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Failed</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No quiz submissions yet.
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+}

@@ -843,9 +843,25 @@ public class InstructorController : Controller
         return RedirectToAction("ViewSubmissions", new { assignmentId = submission.AssignmentId });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ViewQuizSubmissions(int quizId)
+    {
+        var quiz = await _dbContext.Quizzes
+            .Include(q => q.Course)
+            .FirstOrDefaultAsync(q => q.Id == quizId);
 
+        if (quiz == null)
+            return NotFound();
 
+        var submissions = await _dbContext.QuizSubmissions
+            .Include(s => s.Student)
+            .Include(s => s.Quiz)
+            .Where(s => s.QuizId == quizId)
+            .ToListAsync();
 
+        ViewBag.QuizTitle = quiz.Title;
+        return View(submissions);
+    }
 
     // POST: Save the scheduled live class
     [HttpPost]
