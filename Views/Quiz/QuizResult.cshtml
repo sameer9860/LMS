@@ -80,10 +80,10 @@
             }
 
             <div class="mt-4">
-                <a href="javascript:history.back()" class="btn btn-primary">
-                    <i class="fas fa-arrow-left"></i> Go Back
+                <a asp-controller="Student" asp-action="CourseDetails" asp-route-id="@Model.CourseId" asp-route-tab="assignments" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Course
                 </a>
-                <a href="/" class="btn btn-secondary">
+                <a asp-controller="Student" asp-action="Dashboard" class="btn btn-secondary">
                     <i class="fas fa-home"></i> Dashboard
                 </a>
             </div>

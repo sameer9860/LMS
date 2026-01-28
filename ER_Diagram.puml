@@ -1,0 +1,276 @@
+@startuml LMS_ER_Diagram
+!define TABLENAME(x) class x << (T,#FFAAAA) >>
+!define PRIMARY_KEY {id}
+!define FOREIGN_KEY {fk}
+!define NOT_NULL {not null}
+!define NULLABLE {nullable}
+
+title Entity Relationship Diagram - LMS System
+
+' User Management Entities
+TABLENAME(User) {
+  {id} Id : int
+  Username : string
+  Password : string
+  Role : string
+}
+
+TABLENAME(Instructor) {
+  {id} id : int
+  UserId : int (FK)
+  FirstName : string
+  MiddleName : string
+  LastName : string
+  Email : string
+  PhoneNumber : string
+  Gender : string
+  DateOfBirth : datetime
+  Qualification : string
+  Expertise : string
+  ExperienceYears : int
+  ProfileImagePath : string
+  IsActive : bool
+}
+
+TABLENAME(Student) {
+  {id} Id : int
+  UserId : int (FK)
+  FirstName : string
+  MiddleName : string
+  LastName : string
+  Email : string
+  PhoneNumber : string
+  Gender : string
+  DateOfBirth : datetime
+  Address : string
+  GuardianName : string
+  GuardianPhone : string
+  ProfileImagePath : string
+  EnrollmentDate : datetime
+  Grade : string
+  Instructorid : int (FK)
+}
+
+' Course & Learning Content
+TABLENAME(Course) {
+  {id} Id : int
+  FullName : string
+  ShortName : string
+  Category : string
+  IsVisible : bool
+  StartDate : datetime
+  EndDate : datetime
+  CourseIdNumber : string
+  Summary : string
+  ImagePath : string
+  Instructorid : int (FK)
+}
+
+TABLENAME(Enrollment) {
+  {id} Id : int
+  StudentId : int (FK)
+  CourseId : int (FK)
+  EnrollmentDate : datetime
+}
+
+TABLENAME(Material) {
+  {id} Id : int
+  CourseId : int (FK)
+  Title : string
+  Description : string
+  FilePath : string
+  FileType : string
+  UploadDate : datetime
+}
+
+TABLENAME(LiveClass) {
+  {id} Id : int
+  CourseId : int (FK)
+  Title : string
+  RoomName : string
+  StartTime : datetime
+  EndTime : datetime
+  Description : string
+  IsLive : bool
+  IsCompleted : bool
+}
+
+' Assignment & Submission
+TABLENAME(Assignment) {
+  {id} Id : int
+  CourseId : int (FK)
+  Title : string
+  Description : string
+  FilePath : string
+  AssignedDate : datetime
+  DueDate : datetime
+  PossiblePoints : int
+  PassMarks : int
+}
+
+TABLENAME(AssignmentSubmission) {
+  {id} Id : int
+  AssignmentId : int (FK)
+  StudentId : int (FK)
+  FilePath : string
+  AnswerText : string
+  SubmittedAt : datetime
+  MarksObtained : int
+  IsPassed : bool
+  Feedback : string
+}
+
+' Quiz & Questions
+TABLENAME(Quiz) {
+  {id} Id : int
+  CourseId : int (FK)
+  Title : string
+  Description : string
+  DueDate : datetime
+  Type : enum (Traditional/AI)
+  MaterialPath : string
+}
+
+TABLENAME(MCQ) {
+  {id} Id : int
+  QuizId : int (FK)
+  Question : string
+  OptionA : string
+  OptionB : string
+  OptionC : string
+  OptionD : string
+  OptionE : string
+  CorrectAnswer : string
+  Feedback : string
+}
+
+TABLENAME(QuizSubmission) {
+  {id} Id : int
+  QuizId : int (FK)
+  StudentId : int (FK)
+  SubmittedAt : datetime
+  Score : int
+  TotalQuestions : int
+  AnswersJson : string
+}
+
+TABLENAME(QuizAnswer) {
+  {id} Id : int
+  QuizSubmissionId : int (FK)
+  MCQId : int (FK)
+  SelectedAnswer : string
+}
+
+' Communication
+TABLENAME(ChatMessage) {
+  {id} Id : int
+  CourseId : int (FK)
+  UserId : int (FK)
+  Message : string
+  SentAt : datetime
+}
+
+TABLENAME(Notification) {
+  {id} Id : int
+  UserId : int (FK)
+  Title : string
+  Message : string
+  NotificationType : string
+  RelatedId : int
+  IsRead : bool
+  CreatedAt : datetime
+  IconClass : string
+  ActionUrl : string
+}
+
+' Activity Tracking
+TABLENAME(ActivityLog) {
+  {id} Id : long
+  UserId : string
+  CourseId : string
+  ResourceId : string
+  ActivityType : enum
+  Timestamp : datetime
+  DurationSeconds : int
+  IpAddress : string
+  UserAgent : string
+  MetadataJson : string
+}
+
+' Relationships
+
+' User relationships
+User "1" -- "*" Instructor : creates
+User "1" -- "*" Student : creates
+User "1" -- "*" ChatMessage : sends
+User "1" -- "*" Notification : receives
+
+' Instructor relationships
+Instructor "1" -- "*" Course : teaches
+Student "*" -- "1" Instructor : assigned_to
+
+' Course relationships
+Course "1" -- "*" Enrollment : enrolls_students
+Course "1" -- "*" Material : contains
+Course "1" -- "*" Assignment : has
+Course "1" -- "*" Quiz : has
+Course "1" -- "*" LiveClass : schedules
+Course "1" -- "*" ChatMessage : discussion
+
+' Enrollment relationships
+Enrollment "*" -- "1" Student : records
+Enrollment "*" -- "1" Course : in
+
+' Student relationships
+Student "1" -- "*" AssignmentSubmission : submits
+Student "1" -- "*" QuizSubmission : takes
+
+' Assignment relationships
+Assignment "1" -- "*" AssignmentSubmission : receives
+
+' AssignmentSubmission relationships
+AssignmentSubmission "*" -- "1" Assignment : for
+AssignmentSubmission "*" -- "1" Student : by
+
+' Quiz relationships
+Quiz "1" -- "*" MCQ : contains
+Quiz "1" -- "*" QuizSubmission : has_submissions
+
+' QuizSubmission relationships
+QuizSubmission "*" -- "1" Quiz : for
+QuizSubmission "*" -- "1" Student : by
+QuizSubmission "1" -- "*" QuizAnswer : contains
+
+' MCQ relationships
+MCQ "1" -- "*" QuizAnswer : answered_in
+
+' ChatMessage relationships
+ChatMessage "*" -- "1" Course : in
+
+' Notes
+note right of Quiz
+  Type enum:
+  Traditional (0)
+  AI (1)
+end note
+
+note right of ActivityLog
+  ActivityType enum values:
+  Login(1), Logout(2)
+  ViewMaterial(3)
+  DownloadMaterial(4)
+  StartAssignment(5)
+  SubmitAssignment(6)
+  JoinLiveClass(7)
+  LeaveLiveClass(8)
+  PostForum(9)
+  GradeViewed(10)
+end note
+
+note bottom of Enrollment
+  Junction table for
+  Many-to-Many relationship
+  between Students and Courses
+end note
+
+@enduml

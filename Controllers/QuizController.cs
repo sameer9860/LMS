@@ -30,7 +30,12 @@ namespace LMS.Controllers
         [HttpGet("AutoQuiz")]
         public IActionResult AutoQuiz(int courseId)
         {
-            var model = new QuizViewModel { CourseId = courseId, Type = QuizType.AI };
+            var model = new QuizViewModel 
+            { 
+                CourseId = courseId, 
+                Type = QuizType.AI,
+                DueDate = DateTime.Now.AddDays(7) // Set default due date to 1 week from now
+            };
             return View(model);
         }
 
@@ -38,13 +43,24 @@ namespace LMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AutoQuiz(QuizViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
-
-            string materialText = "";
-            string? materialPath = null;
-
-            if (model.MaterialFile != null && model.MaterialFile.Length > 0)
+            if (!ModelState.IsValid)
             {
+                TempData["Error"] = "Please fill in all required fields.";
+                return View(model);
+            }
+
+            if (model.MaterialFile == null || model.MaterialFile.Length == 0)
+            {
+                TempData["Error"] = "Please upload a PDF file.";
+                return View(model);
+            }
+
+            try
+            {
+                string materialText = "";
+                string? materialPath = null;
+
+                // Upload the file
                 var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
                 Directory.CreateDirectory(uploadsFolder);
                 var fileName = $"{Guid.NewGuid()}_{model.MaterialFile.FileName}";
@@ -57,26 +73,69 @@ namespace LMS.Controllers
 
                 materialPath = "/uploads/" + fileName;
 
-                // For now, use a simple placeholder text
-                // In production, you'd extract text from PDF using a library like iTextSharp or PdfSharp
-                materialText = model.MaterialFile.FileName;
+                // Extract text from PDF
+                if (model.MaterialFile.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    materialText = AIQuizService.ExtractTextFromPdf(filePath);
+                    
+                    if (string.IsNullOrWhiteSpace(materialText))
+                    {
+                        TempData["Error"] = "Could not extract text from PDF. Please ensure the PDF contains readable text.";
+                        return View(model);
+                    }
+                }
+                else
+                {
+                    // For non-PDF files, use filename as fallback
+                    materialText = model.MaterialFile.FileName;
+                }
+
+                // Generate AI Quiz with OpenAI
+                var quiz = await _aiQuizService.GenerateQuizFromMaterialAsync(materialText, 10, model.CourseId);
+                
+                // Set quiz properties from model
+                quiz.Title = model.Title ?? "Auto-Generated Quiz";
+                quiz.Description = model.Description ?? "Generated automatically from uploaded material";
+                quiz.DueDate = model.DueDate != DateTime.MinValue ? model.DueDate : DateTime.Now.AddDays(7);
+                quiz.MaterialPath = materialPath;
+                quiz.Type = QuizType.AI;
+
+                _dbContext.Quizzes.Add(quiz);
+                await _dbContext.SaveChangesAsync();
+
+                // Create notifications for enrolled students
+                var enrolledStudents = _dbContext.Enrollments
+                    .Where(e => e.CourseId == model.CourseId)
+                    .Include(e => e.Student)
+                    .ThenInclude(s => s.User)
+                    .Select(e => e.Student!.User)
+                    .ToList();
+
+                foreach (var user in enrolledStudents)
+                {
+                    _dbContext.Notifications.Add(new Notification
+                    {
+                        UserId = user!.Id,
+                        Title = "New Quiz",
+                        Message = $"A new quiz \"{quiz.Title}\" has been added.",
+                        NotificationType = "quiz",
+                        RelatedId = quiz.Id,
+                        IconClass = "fas fa-graduation-cap",
+                        ActionUrl = $"/Quiz/TakeQuiz?id={quiz.Id}",
+                        CreatedAt = DateTime.Now
+                    });
+                }
+
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = "AI quiz generated and published successfully!";
+                return RedirectToAction("CourseDetails", "Instructor", new { id = model.CourseId });
             }
-
-            // Generate AI Quiz with OpenAI
-            var quiz = await _aiQuizService.GenerateQuizFromMaterialAsync(materialText, 10, model.CourseId);
-            
-            // Set quiz properties from model
-            quiz.Title = model.Title ?? "Auto-Generated Quiz";
-            quiz.Description = model.Description ?? "Generated automatically from uploaded material";
-            quiz.DueDate = model.DueDate != DateTime.MinValue ? model.DueDate : DateTime.Now.AddDays(7);
-            quiz.MaterialPath = materialPath;
-            quiz.Type = QuizType.AI;
-
-            _dbContext.Quizzes.Add(quiz);
-            await _dbContext.SaveChangesAsync();
-
-            TempData["SuccessAssignment"] = "AI quiz generated successfully!";
-            return RedirectToAction("CourseDetails", "Instructor", new { id = model.CourseId });
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"An error occurred while generating the quiz: {ex.Message}";
+                return View(model);
+            }
         }
 
         // ================= Manual Quiz =================
@@ -351,6 +410,7 @@ namespace LMS.Controllers
 
             var model = new QuizResultViewModel
             {
+                CourseId = submission.Quiz?.CourseId ?? 0,
                 QuizTitle = submission.Quiz?.Title ?? "Quiz",
                 Score = score,
                 TotalQuestions = totalQuestions,
@@ -599,13 +659,15 @@ namespace LMS.Controllers
                 quizScores.Add(new StudentQuizScoreViewModel
                 {
                     QuizId = quiz.Id,
+                    SubmissionId = submission?.Id ?? 0,
                     QuizTitle = quiz.Title,
                     QuizDescription = quiz.Description,
+                    QuizType = quiz.Type,
                     Score = submission?.Score ?? 0,
                     TotalQuestions = submission?.TotalQuestions ?? 0,
-                   Percentage = submission != null && submission.TotalQuestions > 0
-    ? Math.Round((submission.Score ?? 0d) * 100.0 / (double)submission.TotalQuestions, 2)
-    : 0,
+                    Percentage = submission != null && submission.TotalQuestions > 0
+                        ? Math.Round((submission.Score ?? 0d) * 100.0 / (double)submission.TotalQuestions, 2)
+                        : 0,
                     SubmittedAt = submission?.SubmittedAt,
                     HasSubmitted = submission != null
                 });
@@ -648,6 +710,7 @@ namespace LMS.Controllers
 
     public class QuizResultViewModel
     {
+        public int CourseId { get; set; }
         public string QuizTitle { get; set; } = string.Empty;
         public int Score { get; set; }
         public int TotalQuestions { get; set; }
@@ -672,8 +735,10 @@ namespace LMS.Controllers
     public class StudentQuizScoreViewModel
     {
         public int QuizId { get; set; }
+        public int SubmissionId { get; set; }
         public string QuizTitle { get; set; } = string.Empty;
         public string? QuizDescription { get; set; }
+        public QuizType QuizType { get; set; }
         public int Score { get; set; }
         public int TotalQuestions { get; set; }
         public double Percentage { get; set; }

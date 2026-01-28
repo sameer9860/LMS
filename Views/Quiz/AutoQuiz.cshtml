@@ -3,33 +3,62 @@
     ViewData["Title"] = "Create AI Quiz";
 }
 
-<h4>Create AI Quiz (Auto-generated)</h4>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-magic"></i> Create AI Quiz (Auto-generated)</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
 
-<form asp-action="AutoQuiz" method="post" enctype="multipart/form-data">
-    <input type="hidden" asp-for="CourseId" />
+                    <form asp-action="AutoQuiz" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="CourseId" />
 
-    <div class="mb-3">
-        <label asp-for="Title" class="form-label">Quiz Title</label>
-        <input asp-for="Title" class="form-control" placeholder="Enter quiz title" />
-        <span asp-validation-for="Title" class="text-danger"></span>
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label">Quiz Title <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="Enter quiz title" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" placeholder="Optional description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Upload PDF / Course Material <span class="text-danger">*</span></label>
+                            <input asp-for="MaterialFile" type="file" class="form-control" accept=".pdf,.txt,.doc,.docx" required />
+                            <small class="text-muted">Supported formats: PDF, TXT, DOC, DOCX</small>
+                            <span asp-validation-for="MaterialFile" class="text-danger d-block"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DueDate" class="form-label">Due Date <span class="text-danger">*</span></label>
+                            <input asp-for="DueDate" type="datetime-local" class="form-control" required />
+                            <small class="text-muted">Default: 1 week from now</small>
+                            <span asp-validation-for="DueDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-magic"></i> Generate AI Quiz
+                            </button>
+                            <a asp-action="CourseDetails" asp-controller="Instructor" asp-route-id="@Model.CourseId" class="btn btn-secondary btn-lg">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label asp-for="Description" class="form-label">Description</label>
-        <textarea asp-for="Description" class="form-control" placeholder="Optional description"></textarea>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Upload PDF / Course Material</label>
-        <input asp-for="MaterialFile" type="file" class="form-control" />
-        <span asp-validation-for="MaterialFile" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-success">
-        <i class="fas fa-magic"></i> Generate AI Quiz
-    </button>
-    <a asp-action="CourseDetails" asp-route-id="@Model.CourseId" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

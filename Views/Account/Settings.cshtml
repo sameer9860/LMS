@@ -26,35 +26,47 @@
                         @Html.AntiForgeryToken()
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small"></div>
 
+                        <!-- Current Password -->
                         <div class="mb-3">
                             <label asp-for="OldPassword" class="form-label small fw-bold">Current Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted">
                                     <i class="fas fa-lock"></i>
                                 </span>
-                                <input asp-for="OldPassword" class="form-control border-start-0 ps-0" placeholder="Enter current password" />
+                                <input asp-for="OldPassword" class="form-control border-start-0 ps-0" placeholder="Enter current password" type="password" id="oldPassword" />
+                                <button type="button" class="btn btn-outline-secondary" id="toggleOldPassword">
+                                    <i class="fas fa-eye-slash"></i>
+                                </button>
                             </div>
                             <span asp-validation-for="OldPassword" class="text-danger small"></span>
                         </div>
 
+                        <!-- New Password -->
                         <div class="mb-3">
                             <label asp-for="NewPassword" class="form-label small fw-bold">New Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted">
                                     <i class="fas fa-key"></i>
                                 </span>
-                                <input asp-for="NewPassword" class="form-control border-start-0 ps-0" placeholder="Min. 6 characters" />
+                                <input asp-for="NewPassword" class="form-control border-start-0 ps-0" placeholder="Min. 6 characters" type="password" id="newPassword" />
+                                <button type="button" class="btn btn-outline-secondary" id="toggleNewPassword">
+                                    <i class="fas fa-eye-slash"></i>
+                                </button>
                             </div>
                             <span asp-validation-for="NewPassword" class="text-danger small"></span>
                         </div>
 
+                        <!-- Confirm Password -->
                         <div class="mb-4">
                             <label asp-for="ConfirmPassword" class="form-label small fw-bold">Confirm New Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted">
                                     <i class="fas fa-check-double"></i>
                                 </span>
-                                <input asp-for="ConfirmPassword" class="form-control border-start-0 ps-0" placeholder="Repeat new password" />
+                                <input asp-for="ConfirmPassword" class="form-control border-start-0 ps-0" placeholder="Repeat new password" type="password" id="confirmPassword" />
+                                <button type="button" class="btn btn-outline-secondary" id="toggleConfirmPassword">
+                                    <i class="fas fa-eye-slash"></i>
+                                </button>
                             </div>
                             <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                         </div>
@@ -98,5 +110,29 @@
             });
             </text>
         }
+
+        // Password toggle function
+        function togglePassword(inputId, toggleId) {
+            const input = document.getElementById(inputId);
+            const toggle = document.getElementById(toggleId);
+            const icon = toggle.querySelector("i");
+
+            toggle.addEventListener("click", () => {
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.remove("fa-eye-slash");
+                    icon.classList.add("fa-eye");
+                } else {
+                    input.type = "password";
+                    icon.classList.remove("fa-eye");
+                    icon.classList.add("fa-eye-slash");
+                }
+            });
+        }
+
+        // Apply toggles to all password fields
+        togglePassword("oldPassword", "toggleOldPassword");
+        togglePassword("newPassword", "toggleNewPassword");
+        togglePassword("confirmPassword", "toggleConfirmPassword");
     </script>
 }

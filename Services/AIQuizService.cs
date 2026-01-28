@@ -1,19 +1,60 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models;
-using OA = OpenAI.Chat;
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using System.Linq;
 
 namespace LMS.Services
 {
     public class AIQuizService : IAIQuizService
     {
-        private readonly OA.ChatClient _chatClient;
+        private readonly IHttpClientFactory _httpFactory;
+        private readonly string _quizApiKey;
 
-        public AIQuizService(OA.ChatClient chatClient)
+        public AIQuizService(IHttpClientFactory httpFactory, IConfiguration config)
         {
-            _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
+            _httpFactory = httpFactory ?? throw new ArgumentNullException(nameof(httpFactory));
+            _quizApiKey = config["QuizAPI:ApiKey"] ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Extracts text content from a PDF file.
+        /// </summary>
+        public static string ExtractTextFromPdf(string pdfFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(pdfFilePath) || !File.Exists(pdfFilePath))
+                return string.Empty;
+
+            var extractedText = new System.Text.StringBuilder();
+
+            try
+            {
+                using (var pdfDocument = new PdfDocument(new PdfReader(pdfFilePath)))
+                {
+                    int pageCount = pdfDocument.GetNumberOfPages();
+
+                    for (int i = 1; i <= pageCount; i++)
+                    {
+                        var page = pdfDocument.GetPage(i);
+                        string pageText = PdfTextExtractor.GetTextFromPage(page);
+                        extractedText.Append(pageText).Append(" ");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error extracting PDF text: {ex.Message}");
+                return string.Empty;
+            }
+
+            return extractedText.ToString().Trim();
         }
 
         public async Task<Quiz> GenerateQuizFromMaterialAsync(string textContent, int numberOfQuestions = 10, int courseId = 0)
@@ -29,113 +70,131 @@ namespace LMS.Services
                 MCQs = new List<MCQ>()
             };
 
-            string prompt =
-$@"Generate {numberOfQuestions} multiple-choice questions from the following text.
-Return the result strictly as a JSON array (no extra commentary). 
-Each item must have these fields: 
-Question, OptionA, OptionB, OptionC, OptionD, CorrectAnswer, Feedback.
-
-Text:
----
-{textContent}
----";
-
-            // Use OA alias for all OpenAI.Chat types
-            var messages = new List<OA.ChatMessage>
-            {
-                new OA.SystemChatMessage("You are a helpful quiz generator. Return only a JSON array of questions."),
-                new OA.UserChatMessage(prompt)
-            };
-
-            OA.ChatCompletion completion = await _chatClient.CompleteChatAsync(messages);
-
-            string aiOutput = completion?.Content?.Count > 0 ? completion.Content[0].Text ?? string.Empty : string.Empty;
-
-            string json = ExtractJson(aiOutput);
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
             try
             {
-                var parsed = JsonSerializer.Deserialize<List<MCQDto>>(json, options);
-                if (parsed != null)
+                // Fetch questions from quizapi.io
+                var client = _httpFactory.CreateClient();
+                
+                string url = $"https://quizapi.io/api/v1/questions?apiKey={Uri.EscapeDataString(_quizApiKey)}&limit={numberOfQuestions}";
+                
+                var response = await client.GetAsync(url);
+                
+                if (!response.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Quiz API request failed ({(int)response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+
+                var json = await response.Content.ReadAsStringAsync();
+                
+                // Parse quizapi.io response format
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var dto in parsed)
+                    foreach (var item in root.EnumerateArray())
                     {
-                        quiz.MCQs.Add(new MCQ
+                        var mcq = ParseQuizApiQuestion(item);
+                        if (mcq != null)
+                            quiz.MCQs.Add(mcq);
+                    }
+                }
+
+                if (quiz.MCQs.Count == 0)
+                    throw new InvalidOperationException("No valid questions were returned from the API.");
+
+                return quiz;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Quiz API request failed: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Parses a question object from quizapi.io response into an MCQ.
+        /// quizapi.io format:
+        /// {
+        ///   "id": 1,
+        ///   "question": "...",
+        ///   "description": "...",
+        ///   "answers": { "answer_a": "...", "answer_b": "...", ... },
+        ///   "correct_answers": { "answer_a_correct": "true", ... },
+        ///   "explanation": "..."
+        /// }
+        /// </summary>
+        private static MCQ? ParseQuizApiQuestion(JsonElement element)
+        {
+            try
+            {
+                string? question = null;
+                if (element.TryGetProperty("question", out var qProp) && qProp.ValueKind == JsonValueKind.String)
+                    question = qProp.GetString();
+
+                if (string.IsNullOrWhiteSpace(question))
+                    return null;
+
+                // Extract answer options
+                var answers = new Dictionary<string, string>();
+                if (element.TryGetProperty("answers", out var answersProp) && answersProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in answersProp.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.String)
+                            answers[prop.Name] = prop.Value.GetString() ?? "";
+                    }
+                }
+
+                // Find the correct answer
+                string correctAnswer = "";
+                if (element.TryGetProperty("correct_answers", out var correctProp) && correctProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in correctProp.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.String && prop.Value.GetString() == "true")
                         {
-                            Question = dto.Question ?? "",
-                            OptionA = dto.OptionA ?? "",
-                            OptionB = dto.OptionB ?? "",
-                            OptionC = dto.OptionC ?? "",
-                            OptionD = dto.OptionD ?? "",
-                            CorrectAnswer = dto.CorrectAnswer ?? "",
-                            Feedback = dto.Feedback ?? ""
-                        });
+                            // answer_a_correct -> answer_a
+                            string keyName = prop.Name.Replace("_correct", "");
+                            correctAnswer = keyName;
+                            break;
+                        }
                     }
                 }
-                else
+
+                // Map answer_a, answer_b, etc. to OptionA, OptionB, etc.
+                string optionA = answers.ContainsKey("answer_a") ? answers["answer_a"] : "";
+                string optionB = answers.ContainsKey("answer_b") ? answers["answer_b"] : "";
+                string optionC = answers.ContainsKey("answer_c") ? answers["answer_c"] : "";
+                string optionD = answers.ContainsKey("answer_d") ? answers["answer_d"] : "";
+
+                // Map answer_a -> A, answer_b -> B, etc.
+                string mappedCorrectAnswer = "";
+                if (correctAnswer == "answer_a") mappedCorrectAnswer = "A";
+                else if (correctAnswer == "answer_b") mappedCorrectAnswer = "B";
+                else if (correctAnswer == "answer_c") mappedCorrectAnswer = "C";
+                else if (correctAnswer == "answer_d") mappedCorrectAnswer = "D";
+                else mappedCorrectAnswer = "A"; // default
+
+                string explanation = "";
+                if (element.TryGetProperty("explanation", out var expProp) && expProp.ValueKind == JsonValueKind.String)
+                    explanation = expProp.GetString() ?? "";
+
+                return new MCQ
                 {
-                    quiz.MCQs.Add(CreateFallbackMCQ(aiOutput));
-                }
+                    Question = question,
+                    OptionA = optionA,
+                    OptionB = optionB,
+                    OptionC = optionC,
+                    OptionD = optionD,
+                    CorrectAnswer = mappedCorrectAnswer,
+                    Feedback = explanation
+                };
             }
-            catch (JsonException)
+            catch
             {
-                quiz.MCQs.Add(CreateFallbackMCQ(aiOutput));
+                return null;
             }
-
-            return quiz;
         }
 
-        // Extract JSON from AI output (removes Markdown code fences etc.)
-        private static string ExtractJson(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-                return "[]";
-
-            var trimmed = text.Trim();
-            if (trimmed.StartsWith("```"))
-            {
-                int startFence = trimmed.IndexOf("```");
-                int endFence = trimmed.LastIndexOf("```");
-                if (endFence > startFence)
-                {
-                    var inner = trimmed.Substring(startFence + 3, endFence - (startFence + 3));
-                    if (inner.TrimStart().StartsWith("json", StringComparison.OrdinalIgnoreCase))
-                    {
-                        int idx = inner.IndexOf('\n');
-                        if (idx >= 0) inner = inner.Substring(idx + 1);
-                    }
-                    return inner.Trim();
-                }
-            }
-
-            int arrStart = trimmed.IndexOf('[');
-            int arrEnd = trimmed.LastIndexOf(']');
-            if (arrStart >= 0 && arrEnd > arrStart)
-                return trimmed.Substring(arrStart, arrEnd - arrStart + 1);
-
-            return trimmed;
-        }
-
-        private static MCQ CreateFallbackMCQ(string text)
-        {
-            return new MCQ
-            {
-                Question = "AI output (parse failed)",
-                OptionA = text.Length > 200 ? text.Substring(0, 200) + "..." : text,
-                OptionB = "N/A",
-                OptionC = "N/A",
-                OptionD = "N/A",
-                CorrectAnswer = "A",
-                Feedback = "The AI returned non-JSON or parsing failed; check raw output in OptionA."
-            };
-        }
-
-        // DTO for JSON deserialization
+        // DTO for JSON deserialization (kept for backward compatibility if needed)
         private class MCQDto
         {
             public string? Question { get; set; }

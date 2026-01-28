@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using LMS.Services;
-using OpenAI;
-using OpenAI.Chat; // needed for ChatClient and messages
+using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,23 +30,21 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllersWithViews();
 
 // ----------------------
-// OpenAI ChatClient & AIQuizService
+// QuizAPI.io HTTP client & AIQuizService
 // ----------------------
 
-// Get API key from config or environment
-string openAiApiKey = builder.Configuration["OpenAI:ApiKey"] ?? "default_value";
+// Configure HttpClient for QuizAPI. API Key should be set in configuration under "QuizAPI:ApiKey".
+string quizApiKey = builder.Configuration["QuizAPI:ApiKey"] ?? string.Empty;
 
-if (string.IsNullOrWhiteSpace(openAiApiKey))
-    throw new InvalidOperationException("OpenAI API key not configured. Set OPENAI_API_KEY or OpenAI:ApiKey in appsettings.");
-
-// Register ChatClient (official SDK v2.3.0)
-builder.Services.AddSingleton<ChatClient>(sp =>
+if (string.IsNullOrWhiteSpace(quizApiKey))
 {
-    string model = builder.Configuration["OpenAI:Model"] ?? "gpt-4o-mini";
-    return new ChatClient(model, openAiApiKey);
-});
+    // Do not throw here; allow app to start but quiz generation will fail with clear error messages.
+}
 
-// Register AIQuizService for DI
+// Register HttpClient factory (used by AIQuizService)
+builder.Services.AddHttpClient();
+
+// Register AIQuizService for DI (it will use IHttpClientFactory to call QuizAPI)
 builder.Services.AddScoped<IAIQuizService, AIQuizService>();
 
 // ----------------------
