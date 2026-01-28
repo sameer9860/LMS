@@ -57,18 +57,25 @@ namespace LMS.Controllers
 
                 materialPath = "/uploads/" + fileName;
 
-                // TODO: Extract text from PDF or DOCX
-                materialText = "Extracted text from uploaded PDF";
+                // For now, use a simple placeholder text
+                // In production, you'd extract text from PDF using a library like iTextSharp or PdfSharp
+                materialText = model.MaterialFile.FileName;
             }
 
-            // Generate AI Quiz
+            // Generate AI Quiz with OpenAI
             var quiz = await _aiQuizService.GenerateQuizFromMaterialAsync(materialText, 10, model.CourseId);
+            
+            // Set quiz properties from model
+            quiz.Title = model.Title ?? "Auto-Generated Quiz";
+            quiz.Description = model.Description ?? "Generated automatically from uploaded material";
+            quiz.DueDate = model.DueDate != DateTime.MinValue ? model.DueDate : DateTime.Now.AddDays(7);
             quiz.MaterialPath = materialPath;
+            quiz.Type = QuizType.AI;
 
             _dbContext.Quizzes.Add(quiz);
             await _dbContext.SaveChangesAsync();
 
-            TempData["Success"] = "AI quiz generated successfully!";
+            TempData["SuccessAssignment"] = "AI quiz generated successfully!";
             return RedirectToAction("CourseDetails", "Instructor", new { id = model.CourseId });
         }
 

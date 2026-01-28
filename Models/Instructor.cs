@@ -42,17 +42,7 @@ public class Instructor
   [Display(Name = "Date of Birth")]
   public DateTime DateOfBirth { get; set; }
 
-  //  // Account Info
-  //   [Required]
-  //   [Display(Name = "Username")]
-  //   public string? Username { get; set; } // Optional
-
-  //   [Required]
-  //   [DataType(DataType.Password)]
-  //   public string? Password { get; set; }
-
-
-  // Professional Info
+  
   [Required]
   public string? Qualification { get; set; }
 

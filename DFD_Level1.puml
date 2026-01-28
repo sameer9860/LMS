@@ -1,0 +1,58 @@
+@startuml LMS_DFD_Level1
+!define FONTSIZE 10
+skinparam fontSize FONTSIZE
+skinparam backgroundColor #FEFEFE
+
+title Data Flow Diagram - Level 1 (LMS System Context)
+
+' Define actors/entities
+actor Student as S
+actor Instructor as I
+entity "External Services" as EXT
+database "LMS Database" as DB
+
+' Define processes
+rectangle "LMS System" {
+  component "1.0\nUser Management\n& Authentication" as P1
+  component "2.0\nCourse\nManagement" as P2
+  component "3.0\nAssignment &\nQuiz Processing" as P3
+  component "4.0\nCommunication\n& Notifications" as P4
+  component "5.0\nActivity\nTracking" as P5
+}
+
+' Flows from Student
+S --> P1 : Login/Register\nCredentials
+P1 --> S : Authentication\nResponse
+S --> P2 : Browse Courses\nRequest
+P2 --> S : Course Details\nInformation
+S --> P3 : Submit Assignment\nTake Quiz
+P3 --> S : Assignment Feedback\nQuiz Results
+S --> P4 : Send Messages\nChat Requests
+P4 --> S : Messages\nNotifications
+S --> P5 : Activity\nData
+P5 --> S : Activity\nHistory
+
+' Flows from Instructor
+I --> P1 : Login/Register\nCredentials
+P1 --> I : Authentication\nResponse
+I --> P2 : Create/Edit Course\nManage Materials
+P2 --> I : Course Info\nMaterial Confirmation
+I --> P3 : Create Quiz/Assignment\nGrade Submissions
+P3 --> I : Quiz Questions\nGrading Results
+I --> P4 : Broadcast Messages\nSend Notifications
+P4 --> I : Delivery Status
+I --> P5 : Request\nReports
+P5 --> I : Activity\nReports
+
+' External Services flows
+EXT --> P3 : AI Generated\nQuiz Content
+P3 --> EXT : Quiz Prompt\nMaterial Request
+
+' Database flows
+P1 -.-> DB : User Credentials\nProfile Data
+P2 -.-> DB : Courses/Materials\nEnrollment Data
+P3 -.-> DB : Quizzes/Assignments\nSubmissions/Results
+P4 -.-> DB : Messages\nNotifications
+P5 -.-> DB : Activity Logs
+
+@enduml

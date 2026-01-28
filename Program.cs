@@ -8,6 +8,13 @@ using OpenAI.Chat; // needed for ChatClient and messages
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load secrets file if it exists (not tracked in git)
+var secretsPath = Path.Combine(builder.Environment.ContentRootPath, "appsettings.Secrets.json");
+if (File.Exists(secretsPath))
+{
+    builder.Configuration.AddJsonFile(secretsPath, optional: false, reloadOnChange: true);
+}
+
 // ----------------------
 // Services Configuration
 // ----------------------

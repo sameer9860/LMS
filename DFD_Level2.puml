@@ -1,0 +1,141 @@
+@startuml LMS_DFD_Level2
+!define FONTSIZE 9
+skinparam fontSize FONTSIZE
+skinparam backgroundColor #FEFEFE
+
+title Data Flow Diagram - Level 2 (Detailed Process Decomposition)
+
+' Define actors/entities
+actor Student
+actor Instructor
+entity "OpenAI API" as OpenAI
+database "MySQL Database" as DB
+entity "File System" as FileSystem
+
+' User Management & Authentication (1.0)
+rectangle "1.0 User Management & Authentication" {
+  component "1.1\nRegister User" as P1_1
+  component "1.2\nAuthenticate\nLogin" as P1_2
+  component "1.3\nManage Profile" as P1_3
+  component "1.4\nChange Password" as P1_4
+}
+
+' Course Management (2.0)
+rectangle "2.0 Course Management" {
+  component "2.1\nCreate/Edit\nCourse" as P2_1
+  component "2.2\nUpload/Manage\nMaterials" as P2_2
+  component "2.3\nManage Live\nClasses" as P2_3
+  component "2.4\nView Enrolled\nStudents" as P2_4
+  component "2.5\nView Course\nContent" as P2_5
+}
+
+' Assignment & Quiz Processing (3.0)
+rectangle "3.0 Assignment & Quiz Processing" {
+  component "3.1\nCreate/Edit\nAssignment" as P3_1
+  component "3.2\nSubmit\nAssignment" as P3_2
+  component "3.3\nGrade\nAssignment" as P3_3
+  component "3.4\nCreate Manual\nQuiz" as P3_4
+  component "3.5\nGenerate AI\nQuiz" as P3_5
+  component "3.6\nTake Quiz" as P3_6
+  component "3.7\nCalculate Quiz\nScore" as P3_7
+}
+
+' Communication & Notifications (4.0)
+rectangle "4.0 Communication & Notifications" {
+  component "4.1\nSend Chat\nMessages" as P4_1
+  component "4.2\nRetrieve Chat\nHistory" as P4_2
+  component "4.3\nCreate/Send\nNotifications" as P4_3
+  component "4.4\nManage\nNotifications" as P4_4
+}
+
+' Activity Tracking (5.0)
+rectangle "5.0 Activity Tracking" {
+  component "5.1\nLog User\nActivity" as P5_1
+  component "5.2\nFilter Activity\nLogs" as P5_2
+  component "5.3\nGenerate\nReports" as P5_3
+}
+
+' Flows within User Management
+Student --> P1_1 : Registration\nData
+P1_1 --> Student : Confirmation
+Student --> P1_2 : Email/Password
+P1_2 --> Student : Auth Token
+Student --> P1_3 : Profile\nUpdates
+P1_3 --> Student : Updated\nProfile
+P1_3 --> P1_4 : Current\nPassword
+P1_4 --> Student : Status
+
+' Flows within Course Management
+Instructor --> P2_1 : Course Info\n(Name, Dates, Summary)
+P2_1 --> Instructor : Course Created
+Instructor --> P2_2 : File Upload\n(PDF, Doc, Video)
+P2_2 --> FileSystem : Store Material\nFiles
+FileSystem --> P2_2 : File Path
+P2_2 --> Instructor : Upload Status
+Instructor --> P2_3 : Class Details\n(URL, Schedule)
+P2_3 --> Instructor : Status
+Instructor --> P2_4 : Request Student\nList
+P2_4 --> Instructor : Enrolled Students
+Student --> P2_5 : View Course\nRequest
+P2_5 --> Student : Course Info\nMaterials List
+
+' Flows within Assignment & Quiz
+Instructor --> P3_1 : Assignment Details\n(Title, Due Date, Type)
+P3_1 --> Instructor : Created
+Instructor --> P3_4 : Questions, Options\nAnswers
+P3_4 --> Instructor : Quiz Created
+Instructor --> P3_5 : Material URL\nQuiz Parameters
+P3_5 --> OpenAI : Prompt with\nMaterial Content
+OpenAI --> P3_5 : Generated Quiz\nQuestions
+P3_5 --> Instructor : AI Quiz\nPreview
+Student --> P3_2 : Assignment File\nAnswer Text
+P3_2 --> FileSystem : Store\nSubmission
+P3_2 --> Instructor : New Submission\nAlert
+P3_3 --> P3_2 : Grades/Feedback
+P3_3 --> Student : Submission\nGraded
+Student --> P3_6 : Quiz Responses\n(Selected Answers)
+P3_6 --> P3_7 : Answers
+P3_7 --> Student : Score/Results
+P3_7 --> Instructor : Result Summary
+
+' Flows within Communication
+Student --> P4_1 : Message Text
+P4_1 --> P4_2 : Store Message
+P4_2 --> Student : Message Sent
+Instructor --> P4_3 : Notification Title\nContent
+P4_3 --> Student : Notification\nAlert
+Student --> P4_4 : Mark Read
+P4_4 --> Student : Status
+
+' Flows within Activity Tracking
+P1_1 --> P5_1 : User Action\nTimestamp
+P2_1 --> P5_1 : Course Action
+P3_2 --> P5_1 : Assignment\nSubmission
+P4_1 --> P5_1 : Message Sent
+P5_1 --> P5_2 : Log Entry
+Instructor --> P5_2 : Filter\nCriteria
+P5_2 --> Instructor : Filtered Logs
+P5_3 --> Instructor : Activity\nReports
+Instructor --> P5_3 : Report\nRequest
+
+' Database connections
+P1_1 -.-> DB : Save User\nCredentials
+P1_2 -.-> DB : Verify\nCredentials
+P1_3 -.-> DB : Update Profile
+P1_4 -.-> DB : Check/Update\nPassword
+P2_1 -.-> DB : Save Course
+P2_2 -.-> DB : Save Material\nReference
+P2_4 -.-> DB : Query Enrolled\nStudents
+P2_5 -.-> DB : Fetch Course\nData
+P3_1 -.-> DB : Save Assignment
+P3_4 -.-> DB : Save Quiz\nQuestions
+P3_2 -.-> DB : Save Submission
+P3_3 -.-> DB : Save Grades
+P3_6 -.-> DB : Save Responses
+P3_7 -.-> DB : Save Scores
+P4_1 -.-> DB : Save Chat\nMessage
+P4_3 -.-> DB : Save Notification
+P5_1 -.-> DB : Insert Log\nEntry
+P5_2 -.-> DB : Query Activity\nLogs
+
+@enduml

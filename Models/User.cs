@@ -11,11 +11,7 @@ public class User
   [Required]
   public string? Password { get; set; }
   [Required]
-  public string? Role { get; set; }  // e.g., "Admin", "Instructor", "Student"
+  public string? Role { get; set; }  
 
-   // New property to track who created this user
-  
-                          
-  
 
 }

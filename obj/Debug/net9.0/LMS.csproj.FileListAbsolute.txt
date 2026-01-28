@@ -933,3 +933,4 @@ G:/E/Projects/LMS/obj/Debug/net9.0/ref/LMS.dll
 /home/samir/E/Projects/LMS/obj/Debug/net9.0/ref/LMS.dll
 /home/samir/E/Projects/LMS/obj/Debug/net9.0/compressed/9tuzc0h5xp-r394zb2zqq.gz
 /home/samir/E/Projects/LMS/obj/Debug/net9.0/compressed/qspoqeuhce-tqcr7vih7f.gz
+/home/samir/E/Projects/LMS/bin/Debug/net9.0/appsettings.Secrets.json
