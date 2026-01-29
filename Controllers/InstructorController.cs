@@ -1028,7 +1028,36 @@ public class InstructorController : Controller
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> ActivityLogs(ActivityLogFilterViewModel filter)
     {
-        var query = _dbContext.ActivityLogs.AsQueryable();
+        // Get logged-in instructor
+        var username = User.Identity?.Name;
+        if (string.IsNullOrEmpty(username))
+            return RedirectToAction("Login", "Account");
+
+        var instructor = await _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefaultAsync(i => i.User != null && i.User.Username == username);
+
+        if (instructor == null)
+            return RedirectToAction("Login", "Account");
+
+        // Get all students enrolled in this instructor's courses
+        var instructorStudentIds = await _dbContext.Enrollments
+            .Where(e => e.Course != null && e.Course.Instructorid == instructor.id)
+            .Select(e => e.StudentId)
+            .Distinct()
+            .ToListAsync();
+
+        // Get student usernames for this instructor's students
+        var instructorStudentUsernames = await _dbContext.Students
+            .Where(s => instructorStudentIds.Contains(s.Id))
+            .Include(s => s.User)
+            .Where(s => s.User != null)
+            .Select(s => s.User!.Username)
+            .ToListAsync();
+
+        var query = _dbContext.ActivityLogs
+            .Where(l => l.UserId != null && instructorStudentUsernames.Contains(l.UserId))
+            .AsQueryable();
 
         // Filter by student
         if (!string.IsNullOrEmpty(filter.StudentId))
@@ -1247,18 +1276,34 @@ public class InstructorController : Controller
     [HttpGet]
     public async Task<IActionResult> GetActivityChartData()
     {
-        // Get all active student usernames
-        var studentUsernames = await _dbContext.Students
+        // Get logged-in instructor
+        var username = User.Identity?.Name;
+        if (string.IsNullOrEmpty(username)) return Json(new List<object>());
+
+        var instructor = await _dbContext.Instructors
+            .FirstOrDefaultAsync(i => i.User != null && i.User.Username == username);
+        if (instructor == null) return Json(new List<object>());
+
+        // Get all students enrolled in this instructor's courses
+        var instructorStudentIds = await _dbContext.Enrollments
+            .Where(e => e.Course != null && e.Course.Instructorid == instructor.id)
+            .Select(e => e.StudentId)
+            .Distinct()
+            .ToListAsync();
+
+        // Get student usernames for this instructor's students
+        var instructorStudentUsernames = await _dbContext.Students
+            .Where(s => instructorStudentIds.Contains(s.Id))
             .Include(s => s.User)
             .Where(s => s.User != null && !string.IsNullOrEmpty(s.User.Username))
             .Select(s => s.User!.Username)
             .ToListAsync();
 
-        // Get activity stats for the last 30 days ONLY for students (ActivityLog.UserId == Username)
+        // Get activity stats for the last 30 days ONLY for instructor's students
         var logs = await _dbContext.ActivityLogs
             .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) &&
                         l.UserId != null &&
-                        studentUsernames.Contains(l.UserId))
+                        instructorStudentUsernames.Contains(l.UserId))
             .OrderBy(l => l.UserId)
             .ThenByDescending(l => l.Timestamp)
             .ToListAsync();
@@ -1317,8 +1362,24 @@ public class InstructorController : Controller
     [HttpGet]
     public async Task<IActionResult> GetStudentActivityDistribution()
     {
-        // Get all active students with Usernames
+        // Get logged-in instructor
+        var username = User.Identity?.Name;
+        if (string.IsNullOrEmpty(username)) return Json(new List<object>());
+
+        var instructor = await _dbContext.Instructors
+            .FirstOrDefaultAsync(i => i.User != null && i.User.Username == username);
+        if (instructor == null) return Json(new List<object>());
+
+        // Get all students enrolled in this instructor's courses
+        var instructorStudentIds = await _dbContext.Enrollments
+            .Where(e => e.Course != null && e.Course.Instructorid == instructor.id)
+            .Select(e => e.StudentId)
+            .Distinct()
+            .ToListAsync();
+
+        // Get all active students with Usernames for this instructor
         var students = await _dbContext.Students
+            .Where(s => instructorStudentIds.Contains(s.Id))
             .Include(s => s.User)
             .Where(s => s.User != null && !string.IsNullOrEmpty(s.User.Username))
             .Select(s => new { Username = s.User!.Username, Name = s.FirstName + " " + s.LastName })
@@ -1328,7 +1389,9 @@ public class InstructorController : Controller
         var excluded = new[] { "Unknown", "admin" }; // excluded usernames
 
         var logs = await _dbContext.ActivityLogs
-            .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) && l.UserId != null)
+            .Where(l => l.Timestamp >= DateTimeOffset.UtcNow.AddDays(-30) && 
+                        l.UserId != null &&
+                        studentDict.Keys.Contains(l.UserId))
             .ToListAsync();
 
         // Group by Student Name

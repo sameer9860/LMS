@@ -121,11 +121,11 @@ public class AdminController : Controller
         {
             UserId = user.Id,
             Title = "Welcome to LMS",
-            Message = $"Your instructor account has been created. Your username is: {model.Username}. Please log in to get started.",
+            Message = $"Your instructor account has been created. Your username is: {model.Username}. Please log in and create your first course!",
             NotificationType = "instructor_created",
             RelatedId = instructor.id,
             IconClass = "fas fa-user-tie",
-            ActionUrl = "/Home/Index",
+            ActionUrl = "/Instructor/CreateCourse",
             CreatedAt = DateTime.Now,
             IsRead = false
         };
