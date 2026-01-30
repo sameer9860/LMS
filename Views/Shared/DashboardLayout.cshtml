@@ -245,9 +245,21 @@
                         <div class="collapse" id="coursesMenu">
                             <ul class="nav flex-column ms-3">
                                 <li>
-                                    <a href="@Url.Action("CreateCourse", "Instructor")" class="nav-link">
-                                        <i class="fas fa-plus"></i> <span>Create Course</span>
-                                    </a>
+                                    @{
+                                        var instr = _context.Instructors.FirstOrDefault(i => i.UserId == userId);
+                                    }
+                                    @if (instr != null && instr.IsCourseCreationAllowed)
+                                    {
+                                        <a href="@Url.Action("CreateCourse", "Instructor")" class="nav-link">
+                                            <i class="fas fa-plus"></i> <span>Create Course</span>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a class="nav-link disabled" title="An administrator must grant permission to create courses.">
+                                            <i class="fas fa-plus"></i> <span>Create Course</span>
+                                        </a>
+                                    }
                                 </li>
                                 <li>
                                     <a href="@Url.Action("Course", "Instructor")" class="nav-link">

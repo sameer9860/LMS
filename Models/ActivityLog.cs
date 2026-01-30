@@ -15,7 +15,8 @@ public enum ActivityType
     CreateCourse = 11,
     EnrollStudent = 12,
     ApproveInstructor = 13,
-    CreateStudent = 14
+    CreateStudent = 14,
+    GrantCourseCreation = 15
 }
 
 public class ActivityLog

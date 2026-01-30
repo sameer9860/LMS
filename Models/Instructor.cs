@@ -65,4 +65,7 @@ public class Instructor
     public bool IsApproved { get; set; } = false;
     public DateTime? ApprovedAt { get; set; }
     public int? ApprovedByAdminId { get; set; }
+
+    // Admin must explicitly grant permission before an approved instructor can create courses
+    public bool IsCourseCreationAllowed { get; set; } = false;
 }

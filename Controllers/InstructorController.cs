@@ -331,6 +331,18 @@ public class InstructorController : Controller
 
         var instructorId = loggedInInstructor?.id ?? 0;
 
+        if (!loggedInInstructor.IsApproved)
+        {
+            TempData["ErrorMessage"] = "Your instructor account is awaiting admin approval. You cannot create courses yet.";
+            return RedirectToAction("Dashboard");
+        }
+
+        if (!loggedInInstructor.IsCourseCreationAllowed)
+        {
+            TempData["ErrorMessage"] = "An administrator must grant permission before you can create courses.";
+            return RedirectToAction("Dashboard");
+        }
+
         ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", instructorId);
         
         var model = new CourseViewModels 
@@ -359,6 +371,12 @@ public class InstructorController : Controller
         if (!loggedInInstructor.IsApproved)
         {
             TempData["ErrorMessage"] = "Your instructor account is awaiting admin approval. You cannot create courses yet.";
+            return RedirectToAction("Dashboard");
+        }
+
+        if (!loggedInInstructor.IsCourseCreationAllowed)
+        {
+            TempData["ErrorMessage"] = "An administrator must grant permission before you can create courses.";
             return RedirectToAction("Dashboard");
         }
 
@@ -416,34 +434,8 @@ public class InstructorController : Controller
             CourseId = course.Id.ToString()
         });
 
-        // Assign any admin-created (unassigned) students to this instructor and enroll them into the new course
-        var unassignedStudents = await _dbContext.Students.Where(s => s.Instructorid == null).ToListAsync();
-        foreach (var s in unassignedStudents)
-        {
-            s.Instructorid = loggedInInstructor.id;
-
-            // Add enrollment if the student isn't already enrolled in this course
-            var alreadyEnrolled = await _dbContext.Enrollments.AnyAsync(e => e.CourseId == course.Id && e.StudentId == s.Id);
-            if (!alreadyEnrolled)
-            {
-                _dbContext.Enrollments.Add(new Enrollment
-                {
-                    StudentId = s.Id,
-                    CourseId = course.Id,
-                    EnrollmentDate = DateTime.UtcNow
-                });
-
-                // Log an enrollment activity for the student
-                _dbContext.ActivityLogs.Add(new ActivityLog
-                {
-                    UserId = s.UserId.ToString(),
-                    ActivityType = ActivityType.EnrollStudent,
-                    Timestamp = DateTimeOffset.UtcNow,
-                    CourseId = course.Id.ToString(),
-                    ResourceId = s.Id.ToString()
-                });
-            }
-        }
+        // Note: Do NOT auto-assign or auto-enroll students when creating a course.
+        // Students must be explicitly enrolled by the instructor via the Enroll student flow.
 
         await _dbContext.SaveChangesAsync();
 

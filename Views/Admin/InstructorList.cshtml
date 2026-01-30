@@ -94,10 +94,39 @@
                                 data-username="@instructor.User?.Username">
                                 <i class="bi bi-trash3"></i>
                             </button>
+
                             <a asp-action="InstructorProfile" asp-route-id="@instructor.id"
                                 class="btn btn-sm btn-outline-secondary" title="View Profile">
                                 <i class="bi bi-person-circle"></i>
                             </a>
+
+                            @* Course creation permission indicator and Grant/Revoke buttons *@
+                            <div class="d-flex align-items-center ms-2">
+                                @if (instructor.IsCourseCreationAllowed)
+                                {
+                                    <span class="badge bg-success me-2">Course Create: Allowed</span>
+
+                                    <form asp-action="RevokeCourseCreation" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@instructor.id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Permission">
+                                            <i class="bi bi-lock-fill"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary me-2">Course Create: Denied</span>
+
+                                    <form asp-action="GrantCourseCreation" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@instructor.id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Grant Permission">
+                                            <i class="bi bi-unlock-fill"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
                         </div>
                     </td>
                 </tr>

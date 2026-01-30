@@ -139,7 +139,7 @@ public class AdminController : Controller
             {
                 UserId = instructor.UserId,
                 Title = "Instructor Approved",
-                Message = "Your instructor account has been approved by admin. You may now create courses.",
+                Message = "Your instructor account has been approved by admin. An administrator must grant permission before you can create courses.",
                 NotificationType = "instructor_approved",
                 RelatedId = instructor.id,
                 IconClass = "fas fa-check",
@@ -153,6 +153,85 @@ public class AdminController : Controller
 
         TempData["SuccessMessage"] = "Instructor approved.";
         return RedirectToAction("PendingInstructors");
+    }
+
+    // POST: Grant course creation permission to an approved instructor
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GrantCourseCreation(int id)
+    {
+        var instructor = await _dbContext.Instructors.FirstOrDefaultAsync(i => i.id == id);
+        if (instructor == null) return NotFound();
+
+        if (!instructor.IsApproved)
+        {
+            TempData["ErrorMessage"] = "Instructor must be approved before granting course creation permission.";
+            return RedirectToAction("InstructorList");
+        }
+
+        instructor.IsCourseCreationAllowed = true;
+        await _dbContext.SaveChangesAsync();
+
+        // Log activity
+        var adminUsername = User.Identity?.Name;
+        var adminUser = _dbContext.Users.FirstOrDefault(u => u.Username == adminUsername);
+        _dbContext.ActivityLogs.Add(new ActivityLog
+        {
+            UserId = adminUser?.Id.ToString(),
+            ActivityType = ActivityType.GrantCourseCreation,
+            Timestamp = DateTimeOffset.UtcNow,
+            ResourceId = instructor.id.ToString()
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Notify instructor if user exists
+        if (instructor.UserId > 0)
+        {
+            var notification = new Notification
+            {
+                UserId = instructor.UserId,
+                Title = "Course Creation Permission Granted",
+                Message = "An administrator has granted you permission to create courses.",
+                NotificationType = "grant_course_creation",
+                RelatedId = instructor.id,
+                IconClass = "fas fa-unlock",
+                ActionUrl = "/Instructor/CreateCourse",
+                CreatedAt = DateTime.Now,
+                IsRead = false
+            };
+            _dbContext.Notifications.Add(notification);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        TempData["SuccessMessage"] = "Course creation permission granted.";
+        return RedirectToAction("InstructorList");
+    }
+
+    // POST: Revoke course creation permission
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeCourseCreation(int id)
+    {
+        var instructor = await _dbContext.Instructors.FirstOrDefaultAsync(i => i.id == id);
+        if (instructor == null) return NotFound();
+
+        instructor.IsCourseCreationAllowed = false;
+        await _dbContext.SaveChangesAsync();
+
+        // Log activity
+        var adminUsername = User.Identity?.Name;
+        var adminUser = _dbContext.Users.FirstOrDefault(u => u.Username == adminUsername);
+        _dbContext.ActivityLogs.Add(new ActivityLog
+        {
+            UserId = adminUser?.Id.ToString(),
+            ActivityType = ActivityType.ApproveInstructor, // reuse an existing type for audit, or add a new type if desired
+            Timestamp = DateTimeOffset.UtcNow,
+            ResourceId = instructor.id.ToString()
+        });
+        await _dbContext.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Course creation permission revoked.";
+        return RedirectToAction("InstructorList");
     }
 
     [HttpGet]
@@ -201,6 +280,9 @@ public class AdminController : Controller
             GuardianName = filter?.GuardianName,
             Students = students
         };
+
+        // Diagnostic log: number of students returned
+        _logger?.LogInformation("StudentList returned {Count} students", students.Count);
 
         return View(viewModel);
     }
@@ -607,6 +689,8 @@ public class AdminController : Controller
         // Include User so you can access Username in the view
         var query = _dbContext.Instructors.Include(i => i.User).AsQueryable();
 
+        // Diagnostic: if you need a quick JSON endpoint to verify data, call /Admin/Diagnostics
+
         // Search by name (FirstName, MiddleName, LastName)
         if (!string.IsNullOrEmpty(filter?.SearchQuery))
         {
@@ -646,7 +730,20 @@ public class AdminController : Controller
             Instructors = instructors
         };
 
+        // Diagnostic log: number of instructors returned
+        _logger?.LogInformation("InstructorList returned {Count} instructors", instructors.Count);
+
         return View(viewModel);
+    }
+
+    // Diagnostics endpoint for quick checks
+    [HttpGet]
+    public IActionResult Diagnostics()
+    {
+        var instructorCount = _dbContext.Instructors.Count();
+        var studentCount = _dbContext.Students.Count();
+        var userCount = _dbContext.Users.Count();
+        return Json(new { Instructors = instructorCount, Students = studentCount, Users = userCount });
     }
 
     // GET: Student activity detail
