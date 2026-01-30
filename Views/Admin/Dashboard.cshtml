@@ -1,6 +1,11 @@
+@using System.Linq
 @{
     Layout = "~/Views/Shared/DashboardLayout.cshtml";
     DateTime today = DateTime.Now;
+
+    // Avoid dynamic binding: first assign ViewBag item to an object, then cast.
+    object tmp = ViewBag.InstructorLastActivity;
+    var instrActivity = (tmp as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
 }
 
 
@@ -89,16 +94,16 @@
 
 <!-- Instructors last activity -->
 <div class="row mt-3">
-    <div class="col-12">
+    <div class="col-12 col-lg-6">
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title"><i class="fas fa-user-clock me-2"></i>Instructor Activity</h5>
-                @if (ViewBag.InstructorLastActivity != null && ((IEnumerable<dynamic>)ViewBag.InstructorLastActivity).Any())
+                @if (instrActivity != null && instrActivity.Any())
                 {
                     <table class="table table-sm">
                         <thead><tr><th>Instructor</th><th>Last Active</th></tr></thead>
                         <tbody>
-                            @foreach (var x in ViewBag.InstructorLastActivity.Take(10))
+                            @foreach (var x in instrActivity.Take(10))
                             {
                                 var last = x.LastActivity == null ? (DateTimeOffset?)null : (DateTimeOffset?)x.LastActivity;
                                 <tr>
@@ -123,6 +128,86 @@
                 {
                     <div class="alert alert-info">No instructor activity found.</div>
                 }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-user-clock me-2"></i>Student Activity</h5>
+                @{
+                    object stmp = ViewBag.StudentLastActivity;
+                    var studActivity = (stmp as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+                }
+
+                @if (studActivity != null && studActivity.Any())
+                {
+                    <table class="table table-sm">
+                        <thead><tr><th>Student</th><th>Course</th><th>Last Active</th></tr></thead>
+                        <tbody>
+                            @foreach (var x in studActivity.Take(10))
+                            {
+                                var last = x.LastActivity == null ? (DateTimeOffset?)null : (DateTimeOffset?)x.LastActivity;
+                                <tr>
+                                    <td><a href="@Url.Action("StudentActivity","Admin", new { id = x.Id })">@x.FullName</a> (@x.Username)</td>
+                                    <td>@(x.CourseName ?? "-")</td>
+                                    <td>
+                                        @if (last == null)
+                                        {
+                                            <span class="text-muted">No activity</span>
+                                        }
+                                        else
+                                        {
+                                            var daysAgo = (DateTimeOffset.UtcNow - last.Value).TotalDays;
+                                            <span>@Math.Floor(daysAgo) days ago</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info">No student activity found.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Charts Row -->
+<div class="row g-4 mt-3">
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="section-title mb-3">Activity Types (30d)</h6>
+                <div class="chart-wrapper" style="height:260px">
+                    <canvas id="adminActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="section-title mb-3">Top Active Students</h6>
+                <div class="chart-wrapper" style="height:260px">
+                    <canvas id="adminTopStudentsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="section-title mb-3">Course Enrollments</h6>
+                <div class="chart-wrapper" style="height:260px">
+                    <canvas id="adminCourseEnrollmentChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -226,5 +311,83 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => generateCalendar(currentDate));
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Admin charts
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPie('adminActivityChart', '/Admin/GetActivityChartData');
+            loadBar('adminTopStudentsChart', '/Admin/GetStudentActivityDistribution');
+            loadBar('adminCourseEnrollmentChart', '/Admin/GetCourseEnrollmentData');
+
+            function loadPie(canvasId, url) {
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        const el = document.getElementById(canvasId);
+                        if (!el) return;
+                        const ctx = el.getContext('2d');
+
+                        if (!data || data.length === 0) {
+                            ctx.font = "14px Arial";
+                            ctx.textAlign = "center";
+                            ctx.fillText("No data available", el.width/2, el.height/2);
+                            return;
+                        }
+
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.map(x => x.label),
+                                datasets: [{
+                                    data: data.map(x => x.count),
+                                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { position: 'bottom' } }
+                            }
+                        });
+                    });
+            }
+
+            function loadBar(canvasId, url) {
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        const el = document.getElementById(canvasId);
+                        if (!el) return;
+                        const ctx = el.getContext('2d');
+
+                        if (!data || data.length === 0) {
+                            ctx.font = "14px Arial";
+                            ctx.textAlign = "center";
+                            ctx.fillText("No data available", el.width/2, el.height/2);
+                            return;
+                        }
+
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.map(x => x.label),
+                                datasets: [{
+                                    data: data.map(x => x.count),
+                                    backgroundColor: '#3b82f6'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true } }
+                            }
+                        });
+                    });
+            }
+        });
     </script>
 }

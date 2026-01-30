@@ -6,63 +6,158 @@
 <h2>Create Student</h2>
 
 <form asp-action="CreateStudent" method="post" enctype="multipart/form-data">
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label asp-for="FirstName" class="form-label"></label>
-            <input asp-for="FirstName" class="form-control" />
-            <span asp-validation-for="FirstName" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="LastName" class="form-label"></label>
-            <input asp-for="LastName" class="form-control" />
-            <span asp-validation-for="LastName" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
+    <div class="accordion" id="studentAccordion">
+        <!-- Personal Info -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#personalInfo" aria-expanded="true">Personal Information</button>
+            </h2>
+            <div id="personalInfo" class="accordion-collapse collapse show" data-bs-parent="#studentAccordion">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="FirstName" class="form-label"></label>
+                            <input asp-for="FirstName" class="form-control" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="MiddleName" class="form-label"></label>
+                            <input asp-for="MiddleName" class="form-control" />
+                            <span asp-validation-for="MiddleName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="LastName" class="form-label"></label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="PhoneNumber" class="form-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="Gender" class="form-label"></label>
+                            <select asp-for="Gender" class="form-select">
+                                <option value="">-- Select Gender --</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="DateOfBirth" class="form-label"></label>
+                            <input asp-for="DateOfBirth" type="date" class="form-control" />
+                            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="Address" class="form-label"></label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <label asp-for="Grade" class="form-label"></label>
-            <input asp-for="Grade" class="form-control" />
-            <span asp-validation-for="Grade" class="text-danger"></span>
+        <!-- Guardian Info -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#guardianInfo">Guardian Information</button>
+            </h2>
+            <div id="guardianInfo" class="accordion-collapse collapse" data-bs-parent="#studentAccordion">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="GuardianName" class="form-label"></label>
+                            <input asp-for="GuardianName" class="form-control" />
+                            <span asp-validation-for="GuardianName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GuardianPhone" class="form-label"></label>
+                            <input asp-for="GuardianPhone" class="form-control" />
+                            <span asp-validation-for="GuardianPhone" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <label asp-for="EnrollmentDate" class="form-label"></label>
-            <input asp-for="EnrollmentDate" type="date" class="form-control" />
-            <span asp-validation-for="EnrollmentDate" class="text-danger"></span>
+        <!-- Academic Info -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#academicInfo">Academic Information</button>
+            </h2>
+            <div id="academicInfo" class="accordion-collapse collapse" data-bs-parent="#studentAccordion">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="Grade" class="form-label"></label>
+                            <input asp-for="Grade" class="form-control" />
+                            <span asp-validation-for="Grade" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EnrollmentDate" class="form-label"></label>
+                            <input asp-for="EnrollmentDate" type="date" class="form-control" />
+                            <span asp-validation-for="EnrollmentDate" class="text-danger"></span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <label asp-for="Username" class="form-label"></label>
-            <input asp-for="Username" class="form-control" />
-            <span asp-validation-for="Username" class="text-danger"></span>
+        <!-- Login & Image -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#loginInfo">Login & Profile Image</button>
+            </h2>
+            <div id="loginInfo" class="accordion-collapse collapse" data-bs-parent="#studentAccordion">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="Username" class="form-label"></label>
+                            <input asp-for="Username" class="form-control" />
+                            <span asp-validation-for="Username" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" type="password" class="form-control" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ConfirmPassword" class="form-label"></label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="ProfileImage" class="form-label">Profile Image</label>
+                            <input asp-for="ProfileImage" type="file" accept="image/*" class="form-control" />
+                            <span asp-validation-for="ProfileImage" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <label asp-for="Password" class="form-label"></label>
-            <input asp-for="Password" type="password" class="form-control" />
-            <span asp-validation-for="Password" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="InstructorId" class="form-label">Assign Instructor</label>
-            <select asp-for="InstructorId" class="form-select" asp-items="ViewBag.Instructors">
-                <option value="">-- None --</option>
-            </select>
-            <span asp-validation-for="InstructorId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="ProfileImage" class="form-label">Profile Image</label>
-            <input asp-for="ProfileImage" type="file" accept="image/*" class="form-control" />
-            <span asp-validation-for="ProfileImage" class="text-danger"></span>
-        </div>
     </div>
 
     <div class="mt-4 text-end">
         <button class="btn btn-primary">Create Student</button>
     </div>
 </form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

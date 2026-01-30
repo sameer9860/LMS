@@ -27,7 +27,7 @@ namespace LMS.Models
         public int UserId { get; set; }
         public User? User { get; set; }
 
-        public int Instructorid { get; set; }
+        public int? Instructorid { get; set; }
         public Instructor? Instructor { get; set; }
 
         public ICollection<Enrollment>? Enrollments { get; set; }

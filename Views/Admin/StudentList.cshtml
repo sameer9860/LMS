@@ -1,0 +1,156 @@
+@model StudentFilterViewModel
+
+@{
+    ViewBag.Title = "Student List";
+    int sn = 1;
+}
+
+<h2>Student List (Admin)</h2>
+
+<!-- Filter Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <i class="bi bi-funnel me-2"></i> Filter Students
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Search by Name</label>
+                <input type="text" class="form-control form-control-sm" name="SearchQuery" value="@Model.SearchQuery" placeholder="First, Middle, or Last Name" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Email/Username</label>
+                <input type="text" class="form-control form-control-sm" name="Email" value="@Model.Email" placeholder="e.g. student@example.com" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Grade</label>
+                <input type="text" class="form-control form-control-sm" name="Grade" value="@Model.Grade" placeholder="e.g. A, B, C" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted text-uppercase fw-bold">Guardian Name</label>
+                <input type="text" class="form-control form-control-sm" name="GuardianName" value="@Model.GuardianName" placeholder="Guardian Name" />
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-primary btn-sm px-4">
+                    <i class="bi bi-search me-2"></i> Search
+                </button>
+                <a href="@Url.Action("StudentList", "Admin")" class="btn btn-secondary btn-sm px-4">
+                    <i class="bi bi-arrow-clockwise me-2"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Summary -->
+@if (Model.Students != null && Model.Students.Any())
+{
+    <div class="alert alert-info mb-3">
+        <i class="bi bi-info-circle me-2"></i>
+        Found <strong>@Model.Students.Count</strong> student(s)
+    </div>
+}
+
+<div class="table-responsive shadow-sm rounded">
+<table class="table table-bordered table-striped align-middle mb-0">
+    <thead>
+        <tr>
+            <th class="text-nowrap">S.N.</th>
+            <th class="text-nowrap">Full Name</th>
+            <th class="text-nowrap">Username</th>
+            <th class="text-nowrap">Date of Birth</th>
+            <th class="text-nowrap">Grade</th>
+            <th class="text-nowrap">Instructor</th>
+            <th class="text-nowrap" style="width: 180px;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Students != null && Model.Students.Any())
+        {
+            @foreach (var student in Model.Students)
+            {
+                <tr>
+                    <td>@sn</td>
+                    <td>@student.FirstName @student.MiddleName @student.LastName</td>
+                    <td>@student.User?.Username</td>
+                    <td>@student.DateOfBirth.ToShortDateString()</td>
+                    <td>@student.Grade</td>
+                    <td>@(student.Instructor != null ? (student.Instructor.FirstName + " " + student.Instructor.LastName) : "Unassigned")</td>
+                    <td>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a asp-action="EditStudent" asp-controller="Admin" asp-route-id="@student.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal"
+                                data-bs-target="#deleteConfirmModal" data-id="@student.Id" data-username="@student.User?.Username">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+
+                            <a asp-action="StudentProfile" asp-controller="Admin" asp-route-id="@student.Id" class="btn btn-sm btn-outline-secondary" title="View Profile">
+                                <i class="bi bi-person-circle"></i>
+                            </a>
+
+                            <a asp-action="StudentActivity" asp-controller="Admin" asp-route-id="@student.Id" class="btn btn-sm btn-outline-info" title="Activity">
+                                <i class="bi bi-clock-history"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                sn++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox me-2"></i> No students found
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete student: <strong id="studentUsername"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        deleteConfirmModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const studentId = button.getAttribute('data-id');
+            const username = button.getAttribute('data-username');
+
+            const deleteForm = document.getElementById('deleteForm');
+            const usernameSpan = document.getElementById('studentUsername');
+
+            deleteForm.action = '/Admin/DeleteStudent/' + studentId;
+            usernameSpan.textContent = username;
+        });
+    </script>
+}

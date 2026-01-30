@@ -37,98 +37,13 @@
     </div>
 </div>
 
-<!-- Top Charts -->
-<div class="row g-4">
-    <div class="col-12 col-lg-6">
+<div class="row mt-4">
+    <div class="col-12">
         <div class="card h-100">
             <div class="card-body">
-                <div class="text-center section-title mb-3">TOP ACTIVE STUDENTS</div>
-                <div class="chart-wrapper">
-                    <canvas id="topStudentChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-lg-6">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="text-center section-title mb-3">TOP ACTIVE COURSES</div>
-                <div class="chart-wrapper">
-                    <canvas id="topCourseChart"></canvas>
-                </div>
+                <h6 class="section-title">Your Courses & Enrolled Students</h6>
+                <p class="text-muted small mb-0">Instructors can view their own courses and enrolled students from the <a href="@Url.Action("Course", "Instructor")">Courses</a> page. Chart views are available to administrators only.</p>
             </div>
         </div>
     </div>
 </div>
-
-<div class="row justify-content-center mt-4 mb-5">
-    <div class="col-12 col-md-8 col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <div class="text-center section-title mb-3">STUDENTS ACTIVITY</div>
-                <div class="chart-wrapper">
-                    <canvas id="studentActivityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    loadPie('topStudentChart', '/Instructor/GetStudentActivityDistribution');
-    loadPie('topCourseChart', '/Instructor/GetCourseEnrollmentData'); // FIXED
-    loadPie('studentActivityChart', '/Instructor/GetActivityChartData');
-
-    function loadPie(canvasId, url) {
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                const ctx = document.getElementById(canvasId).getContext('2d');
-
-                if (!data || data.length === 0) {
-                    ctx.font = "14px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillText("No data available", 160, 160);
-                    return;
-                }
-
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: data.map(x => x.label),
-                        datasets: [{
-                            data: data.map(x => x.count),
-                            backgroundColor: [
-                                '#3b82f6', '#10b981', '#f59e0b',
-                                '#ef4444', '#6366f1', '#8b5cf6'
-                            ],
-                            hoverOffset: 12,
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    padding: 18
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-    }
-
-});
-</script>
-}

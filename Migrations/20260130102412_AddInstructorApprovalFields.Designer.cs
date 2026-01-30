@@ -4,6 +4,7 @@ using LMS.Views.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMS.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260130102412_AddInstructorApprovalFields")]
+    partial class AddInstructorApprovalFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -642,7 +645,7 @@ namespace LMS.Migrations
                     b.Property<string>("GuardianPhone")
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Instructorid")
+                    b.Property<int>("Instructorid")
                         .HasColumnType("int");
 
                     b.Property<string>("LastName")
@@ -885,7 +888,9 @@ namespace LMS.Migrations
                 {
                     b.HasOne("Instructor", "Instructor")
                         .WithMany()
-                        .HasForeignKey("Instructorid");
+                        .HasForeignKey("Instructorid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("LMS.Models.User", "User")
                         .WithMany()

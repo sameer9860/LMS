@@ -8,16 +8,19 @@ using Microsoft.EntityFrameworkCore;
 using LMS.Models;
 using LMS.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Logging;
 
 public class AdminController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IWebHostEnvironment _env;
+    private readonly ILogger<AdminController> _logger;
 
-    public AdminController(ApplicationDbContext dbContext, IWebHostEnvironment env)
+    public AdminController(ApplicationDbContext dbContext, IWebHostEnvironment env, ILogger<AdminController> logger)
     {
         _dbContext = dbContext;
         _env = env;
+        _logger = logger;
     }
 
 
@@ -29,7 +32,7 @@ public class AdminController : Controller
     [HttpGet]
     public IActionResult CreateStudent()
     {
-        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
+        // No instructor assignment at creation time — students will be unassigned until an instructor creates a course
         return View();
     }
 
@@ -75,8 +78,7 @@ public class AdminController : Controller
             GuardianPhone = model.GuardianPhone,
             Address = model.Address,
             ProfileImagePath = imagePath,
-            UserId = user.Id,
-            Instructorid = model.InstructorId
+            UserId = user.Id
         };
 
         _dbContext.Students.Add(student);
@@ -153,6 +155,185 @@ public class AdminController : Controller
         return RedirectToAction("PendingInstructors");
     }
 
+    [HttpGet]
+    public IActionResult StudentList(StudentFilterViewModel filter)
+    {
+        var query = _dbContext.Students
+            .Include(s => s.User)
+            .Include(s => s.Instructor)
+            .AsQueryable();
+
+        // Search by name (FirstName, MiddleName, LastName)
+        if (!string.IsNullOrEmpty(filter?.SearchQuery))
+        {
+            var searchQuery = filter.SearchQuery.ToLower();
+            query = query.Where(s =>
+                s.FirstName.ToLower().Contains(searchQuery) ||
+                (s.MiddleName ?? "").ToLower().Contains(searchQuery) ||
+                s.LastName.ToLower().Contains(searchQuery));
+        }
+
+        // Filter by email/username
+        if (!string.IsNullOrEmpty(filter?.Email))
+        {
+            query = query.Where(s => s.User != null && s.User.Username.ToLower().Contains(filter.Email.ToLower()));
+        }
+
+        // Filter by grade
+        if (!string.IsNullOrEmpty(filter?.Grade))
+        {
+            query = query.Where(s => s.Grade == filter.Grade);
+        }
+
+        // Filter by guardian name
+        if (!string.IsNullOrEmpty(filter?.GuardianName))
+        {
+            query = query.Where(s => s.GuardianName.ToLower().Contains(filter.GuardianName.ToLower()));
+        }
+
+        var students = query.OrderBy(s => s.FirstName).ToList();
+
+        var viewModel = new StudentFilterViewModel
+        {
+            SearchQuery = filter?.SearchQuery,
+            Email = filter?.Email,
+            Grade = filter?.Grade,
+            GuardianName = filter?.GuardianName,
+            Students = students
+        };
+
+        return View(viewModel);
+    }
+
+    // GET: Admin Edit Student
+    [HttpGet]
+    public async Task<IActionResult> EditStudent(int id)
+    {
+        var student = await _dbContext.Students.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == id);
+        if (student == null) return NotFound();
+
+        var model = new StudentViewModel
+        {
+            FirstName = student.FirstName,
+            MiddleName = student.MiddleName,
+            LastName = student.LastName,
+            Email = student.Email,
+            PhoneNumber = student.PhoneNumber,
+            Gender = student.Gender,
+            DateOfBirth = student.DateOfBirth,
+            Address = student.Address,
+            GuardianName = student.GuardianName,
+            GuardianPhone = student.GuardianPhone,
+
+            EnrollmentDate = student.EnrollmentDate,
+            Grade = student.Grade,
+            InstructorId = student.Instructorid,
+            Username = student.User?.Username ?? string.Empty
+        };
+
+        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", student.Instructorid);
+        return View(model);
+    }
+
+    // POST: Admin Edit Student
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditStudent(int id, StudentViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        var student = await _dbContext.Students.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == id);
+        if (student == null) return NotFound();
+
+        // Update user info
+        if (student.User != null)
+        {
+            student.User.Username = model.Username;
+            if (!string.IsNullOrEmpty(model.Password))
+            {
+                student.User.Password = model.Password; // hash in prod
+            }
+        }
+
+        student.FirstName = model.FirstName;
+        student.MiddleName = model.MiddleName;
+        student.LastName = model.LastName;
+        student.Email = model.Email;
+        student.PhoneNumber = model.PhoneNumber;
+        student.Gender = model.Gender;
+        student.DateOfBirth = model.DateOfBirth;
+        student.Address = model.Address;
+        student.GuardianName = model.GuardianName;
+        student.GuardianPhone = model.GuardianPhone;
+        student.EnrollmentDate = model.EnrollmentDate;
+        student.Grade = model.Grade;
+        student.Instructorid = model.InstructorId;
+
+        // Handle profile image update
+        if (model.ProfileImage != null && model.ProfileImage.Length > 0)
+        {
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "students");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = Guid.NewGuid() + Path.GetExtension(model.ProfileImage.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await model.ProfileImage.CopyToAsync(stream);
+            }
+
+            student.ProfileImagePath = Path.Combine("uploads", "students", fileName).Replace("\\", "/");
+        }
+
+        await _dbContext.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Student updated successfully!";
+        return RedirectToAction("StudentList");
+    }
+
+    // GET: Admin student profile (reuse instructor view)
+    [HttpGet]
+    public async Task<IActionResult> StudentProfile(int id)
+    {
+        var student = await _dbContext.Students
+            .Include(s => s.User)
+            .Include(s => s.Instructor)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (student == null) return NotFound();
+
+        // Reuse Instructor's StudentProfile view
+        return View("~/Views/Instructor/StudentProfile.cshtml", student);
+    }
+
+    // POST: Admin Delete student
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteStudent(int id)
+    {
+        var student = await _dbContext.Students.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == id);
+        if (student == null)
+        {
+            TempData["ErrorMessage"] = "Student not found.";
+            return RedirectToAction(nameof(StudentList));
+        }
+
+        try
+        {
+            _dbContext.Students.Remove(student);
+            await _dbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Student deleted successfully!";
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Error deleting student {StudentId}", id);
+            TempData["ErrorMessage"] = "Failed to delete student due to related data. Please remove related enrollments/submissions first.";
+        }
+
+        return RedirectToAction(nameof(StudentList));
+    }
+
     public IActionResult Dashboard()
     {
         var username = User.Identity!.Name;
@@ -202,16 +383,142 @@ public class AdminController : Controller
             .OrderByDescending(x => x.LastActivity)
             .ToList();
 
+        // Students last activity (include last course id for quick lookup)
+        var studentLastActivity = _dbContext.Students
+            .Include(s => s.User)
+            .Select(s => new {
+                s.Id,
+                FullName = (s.FirstName + " " + s.LastName),
+                Username = s.User != null ? s.User.Username : null,
+                LastActivity = _dbContext.ActivityLogs
+                    .Where(al => s.User != null && al.UserId == s.User.Id.ToString())
+                    .OrderByDescending(al => al.Timestamp)
+                    .Select(al => al.Timestamp).FirstOrDefault(),
+                LastCourseId = _dbContext.ActivityLogs
+                    .Where(al => s.User != null && al.UserId == s.User.Id.ToString() && al.CourseId != null)
+                    .OrderByDescending(al => al.Timestamp)
+                    .Select(al => al.CourseId).FirstOrDefault()
+            })
+            .OrderByDescending(x => x.LastActivity)
+            .ToList();
+
+        // Map course ids to names
+        var courseIds = studentLastActivity
+            .Where(x => !string.IsNullOrEmpty(x.LastCourseId))
+            .Select(x => { int.TryParse(x.LastCourseId, out var id); return id; })
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        var courseMap = _dbContext.Courses
+            .Where(c => courseIds.Contains(c.Id))
+            .ToDictionary(c => c.Id.ToString(), c => c.FullName);
+
+        var studentLastActivityWithCourse = studentLastActivity
+            .Select(x => new {
+                x.Id,
+                x.FullName,
+                x.Username,
+                x.LastActivity,
+                CourseName = (!string.IsNullOrEmpty(x.LastCourseId) && courseMap.ContainsKey(x.LastCourseId)) ? courseMap[x.LastCourseId] : null
+            })
+            .ToList();
+
         ViewBag.InstructorCount = instructorCount;
         ViewBag.StudentCount = studentCount;
         ViewBag.ActiveInstructors = activeInstructors;
         ViewBag.ActiveStudents = activeStudents;
         ViewBag.InstructorLastActivity = instructorLastActivity;
+        ViewBag.StudentLastActivity = studentLastActivityWithCourse;
 
         return View();
     }
 
+    // ===== Admin Chart Endpoints (moved from Instructor) =====
+    [HttpGet]
+    public async Task<IActionResult> GetActivityChartData()
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
+        var data = await _dbContext.ActivityLogs
+            .Where(l => l.Timestamp >= cutoff)
+            .GroupBy(l => l.ActivityType)
+            .Select(g => new { label = g.Key.ToString(), count = g.Count() })
+            .ToListAsync();
+        return Json(data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetStudentActivityDistribution(int? courseId)
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
+
+        // Determine student user IDs to include
+        List<string> studentUserIds;
+        if (courseId.HasValue)
+        {
+            studentUserIds = await _dbContext.Enrollments
+                .Where(e => e.CourseId == courseId.Value)
+                .Select(e => e.Student!.UserId.ToString())
+                .Distinct()
+                .ToListAsync();
+        }
+        else
+        {
+            studentUserIds = await _dbContext.Students
+                .Where(s => s.UserId != null)
+                .Select(s => s.UserId.ToString())
+                .Distinct()
+                .ToListAsync();
+        }
+
+        if (!studentUserIds.Any()) return Json(new List<object>());
+
+        var logs = await _dbContext.ActivityLogs
+            .Where(l => l.Timestamp >= cutoff && l.UserId != null && studentUserIds.Contains(l.UserId))
+            .ToListAsync();
+
+        var students = await _dbContext.Students
+            .Where(s => s.UserId != null)
+            .Include(s => s.User)
+            .ToListAsync();
+
+        var studentDict = students
+            .Where(s => s.User != null)
+            .ToDictionary(s => s.User!.Id.ToString(), s => (s.FirstName + " " + s.LastName).Trim());
+
+        var data = logs
+            .Where(l => l.UserId != null && studentDict.ContainsKey(l.UserId))
+            .GroupBy(l => studentDict[l.UserId!])
+            .Select(g => new { label = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .Take(10)
+            .ToList();
+
+        return Json(data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetCourseEnrollmentData()
+    {
+        var data = await _dbContext.Courses
+            .Select(c => new
+            {
+                label = c.FullName,
+                count = c.Enrollments != null ? c.Enrollments.Count() : 0
+            })
+            .ToListAsync();
+
+        return Json(data);
+    }
+
    
+
+    // GET: Show Create Instructor form
+    [HttpGet]
+    public IActionResult CreateInstructor()
+    {
+        return View();
+    }
 
     // POST: Handle form submission
     [HttpPost]
@@ -264,15 +571,22 @@ public class AdminController : Controller
             instructor.ProfileImagePath = Path.Combine("uploads", "instructors", fileName).Replace("\\", "/");
         }
 
+        // Admin-created instructors are approved immediately
+        instructor.IsApproved = true;
+        instructor.ApprovedAt = DateTime.UtcNow;
+        var adminUsername = User.Identity?.Name;
+        var adminUser = _dbContext.Users.FirstOrDefault(u => u.Username == adminUsername);
+        instructor.ApprovedByAdminId = adminUser?.Id;
+
         _dbContext.Instructors.Add(instructor);
         await _dbContext.SaveChangesAsync();
 
-        // Create notification for the newly created instructor
+        // Notify instructor
         var notification = new Notification
         {
             UserId = user.Id,
-            Title = "Welcome to LMS",
-            Message = $"Your instructor account has been created. Your username is: {model.Username}. Please log in and create your first course!",
+            Title = "Instructor Account Created",
+            Message = $"Your instructor account has been created and approved. You may now create courses!",
             NotificationType = "instructor_created",
             RelatedId = instructor.id,
             IconClass = "fas fa-user-tie",
@@ -294,29 +608,29 @@ public class AdminController : Controller
         var query = _dbContext.Instructors.Include(i => i.User).AsQueryable();
 
         // Search by name (FirstName, MiddleName, LastName)
-        if (!string.IsNullOrEmpty(filter.SearchQuery))
+        if (!string.IsNullOrEmpty(filter?.SearchQuery))
         {
             var searchQuery = filter.SearchQuery.ToLower();
-            query = query.Where(i => 
+            query = query.Where(i =>
                 i.FirstName.ToLower().Contains(searchQuery) ||
-                i.MiddleName.ToLower().Contains(searchQuery) ||
+                (i.MiddleName ?? "").ToLower().Contains(searchQuery) ||
                 i.LastName.ToLower().Contains(searchQuery));
         }
 
         // Filter by email
-        if (!string.IsNullOrEmpty(filter.Email))
+        if (!string.IsNullOrEmpty(filter?.Email))
         {
             query = query.Where(i => i.Email.ToLower().Contains(filter.Email.ToLower()));
         }
 
         // Filter by phone number
-        if (!string.IsNullOrEmpty(filter.PhoneNumber))
+        if (!string.IsNullOrEmpty(filter?.PhoneNumber))
         {
             query = query.Where(i => i.PhoneNumber.Contains(filter.PhoneNumber));
         }
 
         // Filter by qualification
-        if (!string.IsNullOrEmpty(filter.Qualification))
+        if (!string.IsNullOrEmpty(filter?.Qualification))
         {
             query = query.Where(i => i.Qualification.ToLower().Contains(filter.Qualification.ToLower()));
         }
@@ -325,11 +639,65 @@ public class AdminController : Controller
 
         var viewModel = new InstructorFilterViewModel
         {
-            SearchQuery = filter.SearchQuery,
-            Email = filter.Email,
-            PhoneNumber = filter.PhoneNumber,
-            Qualification = filter.Qualification,
+            SearchQuery = filter?.SearchQuery,
+            Email = filter?.Email,
+            PhoneNumber = filter?.PhoneNumber,
+            Qualification = filter?.Qualification,
             Instructors = instructors
+        };
+
+        return View(viewModel);
+    }
+
+    // GET: Student activity detail
+    [HttpGet]
+    public async Task<IActionResult> StudentActivity(int id)
+    {
+        var student = await _dbContext.Students.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == id);
+        if (student == null) return NotFound();
+
+        var userId = student.UserId.ToString();
+
+        var logs = await _dbContext.ActivityLogs
+            .Where(l => l.UserId == userId)
+            .OrderByDescending(l => l.Timestamp)
+            .Take(200)
+            .ToListAsync();
+
+        // Collect course ids
+        var courseIds = logs
+            .Where(l => !string.IsNullOrEmpty(l.CourseId))
+            .Select(l => { int.TryParse(l.CourseId, out var idVal); return idVal; })
+            .Where(i => i > 0)
+            .Distinct()
+            .ToList();
+
+        var courses = await _dbContext.Courses.Where(c => courseIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id.ToString(), c => c.FullName);
+
+        var displayLogs = logs.Select(l => new ActivityLogDisplayItem
+        {
+            Id = l.Id,
+            ActivityType = l.ActivityType,
+            CourseId = l.CourseId,
+            CourseName = (!string.IsNullOrEmpty(l.CourseId) && courses.ContainsKey(l.CourseId)) ? courses[l.CourseId] : null,
+            DurationSeconds = l.DurationSeconds,
+            IpAddress = l.IpAddress,
+            MetadataJson = l.MetadataJson,
+            ResourceId = l.ResourceId,
+            ResourceTitle = l.ResourceId, // could be improved
+            Timestamp = l.Timestamp,
+            UserAgent = l.UserAgent,
+            UserId = l.UserId,
+            StudentName = (student.FirstName + " " + student.LastName).Trim()
+        }).ToList();
+
+        var viewModel = new ActivityLogFilterViewModel
+        {
+            StudentId = student.User?.Username ?? student.UserId.ToString(),
+            FromDate = null,
+            ToDate = null,
+            ActivityType = null,
+            Logs = displayLogs
         };
 
         return View(viewModel);
@@ -436,10 +804,26 @@ public class AdminController : Controller
             return RedirectToAction(nameof(InstructorList));
         }
 
-        _dbContext.Instructors.Remove(instructor);
-        await _dbContext.SaveChangesAsync();
+        // Check for dependent data that would block deletion
+        var courseCount = await _dbContext.Courses.CountAsync(c => c.Instructorid == id);
+        if (courseCount > 0)
+        {
+            TempData["ErrorMessage"] = $"Cannot delete instructor. They have {courseCount} course(s). Reassign or delete those courses first.";
+            return RedirectToAction(nameof(InstructorList));
+        }
 
-        TempData["ErrorMessage"] = "Instructor deleted successfully!";
+        try
+        {
+            _dbContext.Instructors.Remove(instructor);
+            await _dbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Instructor deleted successfully!";
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Error deleting instructor {InstructorId}", id);
+            TempData["ErrorMessage"] = "Failed to delete instructor due to related data. Please remove related courses/assignments/materials first.";
+        }
+
         return RedirectToAction(nameof(InstructorList));
     }
     [HttpGet]

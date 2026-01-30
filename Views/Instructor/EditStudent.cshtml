@@ -133,13 +133,7 @@
                             <input asp-for="EnrollmentDate" type="date" class="form-control" required />
                             <span asp-validation-for="EnrollmentDate" class="text-danger"></span>
                         </div>
-                        <div class="col-md-4">
-                            <label asp-for="InstructorId" class="form-label">Assigned Instructor</label>
-                            <select asp-for="InstructorId" asp-items="ViewBag.Instructors" class="form-select" required>
-                                <option value="">-- Select Instructor --</option>
-                            </select>
-                            <span asp-validation-for="InstructorId" class="text-danger"></span>
-                        </div>
+
                     </div>
                 </div>
             </div>

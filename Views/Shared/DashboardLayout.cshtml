@@ -207,9 +207,10 @@
                 {
                     <li><a href="@Url.Action("Dashboard", "Admin")" class="nav-link"><i class="fas fa-th-large"></i>
                             <span>Dashboard</span></a></li>
-                    <li><a href="@Url.Action("CreateInstructor", "Admin")" class="nav-link"><i
-                                class="fas fa-chalkboard-teacher"></i> <span>Create Instructor</span></a></li>
+                    <li><a href="@Url.Action("CreateInstructor", "Admin")" class="nav-link"><i class="fas fa-chalkboard-teacher"></i> <span>Create Instructor</span></a></li>
+
                     <li><a href="@Url.Action("CreateStudent", "Admin")" class="nav-link"><i class="fas fa-user-plus"></i> <span>Create Student</span></a></li>
+                    <li><a href="@Url.Action("StudentList", "Admin")" class="nav-link"><i class="fas fa-list"></i> <span>Student List</span></a></li>
                     <li><a href="@Url.Action("InstructorList", "Admin")" class="nav-link"><i class="fas fa-user-graduate"></i>
                             <span>Instructor List</span></a></li>
                     <li><a href="@Url.Action("PendingInstructors", "Admin")" class="nav-link"><i class="fas fa-hourglass-half"></i> <span>Pending Approvals</span></a></li>
@@ -260,11 +261,7 @@
 
                     </li>
 
-                   <li>
-    <a href="@Url.Action("ActivityLogs", "Instructor")" class="nav-link">
-        <i class="fas fa-clipboard-list"></i> <span>Activity Log</span>
-    </a>
-</li>
+
 
                 }
                 else if (isStudent)
