@@ -1,0 +1,38 @@
+@model IEnumerable<Instructor>
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+<h2>Pending Instructor Approvals</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No pending instructors.</div>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var inst in Model)
+            {
+                <tr>
+                    <td>@inst.FirstName @inst.LastName</td>
+                    <td>@inst.Email</td>
+                    <td>
+                        <form asp-action="ApproveInstructor" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="@inst.id" />
+                            <button class="btn btn-success btn-sm">Approve</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

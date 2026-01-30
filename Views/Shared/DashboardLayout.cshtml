@@ -209,8 +209,10 @@
                             <span>Dashboard</span></a></li>
                     <li><a href="@Url.Action("CreateInstructor", "Admin")" class="nav-link"><i
                                 class="fas fa-chalkboard-teacher"></i> <span>Create Instructor</span></a></li>
+                    <li><a href="@Url.Action("CreateStudent", "Admin")" class="nav-link"><i class="fas fa-user-plus"></i> <span>Create Student</span></a></li>
                     <li><a href="@Url.Action("InstructorList", "Admin")" class="nav-link"><i class="fas fa-user-graduate"></i>
                             <span>Instructor List</span></a></li>
+                    <li><a href="@Url.Action("PendingInstructors", "Admin")" class="nav-link"><i class="fas fa-hourglass-half"></i> <span>Pending Approvals</span></a></li>
                 }
                 else if (isInstructor)
                 {

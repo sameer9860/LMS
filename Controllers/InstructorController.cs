@@ -162,10 +162,11 @@ public class InstructorController : Controller
         return View(viewModel);
     }
 
-    // GET: Show form to create student
+    // GET: Show page to enroll students (admin handles creation)
     [HttpGet]
     public IActionResult EnrollStudents()
     {
+        // Inform instructors that only admin can create student accounts and provide list of existing students
         var username = User.Identity?.Name;
         var loggedInInstructor = _dbContext.Instructors
             .Include(i => i.User)
@@ -174,86 +175,22 @@ public class InstructorController : Controller
         var instructorId = loggedInInstructor?.id ?? 0;
 
         ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", instructorId);
-        
+        ViewBag.Students = _dbContext.Students.Include(s => s.User).Where(s => s.Instructorid == instructorId).ToList();
+        ViewBag.Message = "Student accounts must be created by Admin. Use the course page to enroll existing students.";
+
         var model = new StudentViewModel { InstructorId = instructorId };
         return View(model);
     }
 
-    // POST: Handle create student
+    // POST: Handle enroll existing student only (no account creation)
     [HttpPost]
     public async Task<IActionResult> EnrollStudents(StudentViewModel model)
     {
-        var username = User.Identity?.Name;
-        var loggedInInstructor = _dbContext.Instructors
-            .Include(i => i.User)
-            .FirstOrDefault(i => i.User!.Username == username);
-
-        if (loggedInInstructor != null && model.InstructorId == 0)
-        {
-            model.InstructorId = loggedInInstructor.id;
-        }
-
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", model.InstructorId);
-            return View(model);
-        }
-
-        try
-        {
-            var user = new User
-            {
-                Username = model.Username,
-                Password = model.Password,
-                Role = "Student"
-            };
-            _dbContext.Users.Add(user);
-            await _dbContext.SaveChangesAsync();
-
-            string imagePath = string.Empty;
-            if (model.ProfileImage != null)
-            {
-                var uploads = Path.Combine(_env.WebRootPath, "uploads", "students");
-                Directory.CreateDirectory(uploads);
-                var fileName = Guid.NewGuid() + Path.GetExtension(model.ProfileImage.FileName);
-                var filePath = Path.Combine(uploads, fileName);
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await model.ProfileImage.CopyToAsync(stream);
-                imagePath = Path.Combine("uploads", "students", fileName).Replace("\\", "/");
-            }
-
-            var student = new Student
-            {
-                FirstName = model.FirstName,
-                MiddleName = model.MiddleName,
-                LastName = model.LastName,
-                Email = model.Email,
-                PhoneNumber = model.PhoneNumber,
-                Gender = model.Gender,
-                DateOfBirth = model.DateOfBirth,
-                Address = model.Address,
-                GuardianName = model.GuardianName,
-                GuardianPhone = model.GuardianPhone,
-                Grade = model.Grade,
-                EnrollmentDate = model.EnrollmentDate,
-                ProfileImagePath = imagePath,
-                UserId = user.Id,
-                Instructorid = model.InstructorId
-            };
-
-            _dbContext.Students.Add(student);
-            await _dbContext.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Student created successfully!";
-            return RedirectToAction("StudentList");
-        }
-        catch (Exception ex)
-        {
-            ModelState.AddModelError("", "Error: " + ex.Message);
-            ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName", model.InstructorId);
-            return View(model);
-        }
+        // This endpoint no longer creates User accounts. Only admin can create students.
+        TempData["Error"] = "Only Admin can register new student accounts. Please ask admin to create a student, or use the course's Enroll feature to enroll existing students.";
+        return RedirectToAction("EnrollStudents");
     }
+
 
     // GET: Edit student
     [HttpGet]
@@ -400,6 +337,23 @@ public class InstructorController : Controller
     [HttpPost]
     public async Task<IActionResult> CreateCourse(CourseViewModels model)
     {
+        var username = User.Identity?.Name;
+        var loggedInInstructor = _dbContext.Instructors
+            .Include(i => i.User)
+            .FirstOrDefault(i => i.User!.Username == username);
+
+        if (loggedInInstructor == null)
+        {
+            TempData["ErrorMessage"] = "Unauthorized";
+            return RedirectToAction("Dashboard");
+        }
+
+        if (!loggedInInstructor.IsApproved)
+        {
+            TempData["ErrorMessage"] = "Your instructor account is awaiting admin approval. You cannot create courses yet.";
+            return RedirectToAction("Dashboard");
+        }
+
         if (!ModelState.IsValid)
         {
             ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
@@ -440,6 +394,19 @@ public class InstructorController : Controller
         };
 
         _dbContext.Courses.Add(course);
+        await _dbContext.SaveChangesAsync();
+
+        // Log activity: instructor created a course
+        var instructorUsername = User.Identity?.Name;
+        var instructorUser = _dbContext.Users.FirstOrDefault(u => u.Username == instructorUsername);
+        _dbContext.ActivityLogs.Add(new ActivityLog
+        {
+            UserId = instructorUser?.Id.ToString(),
+            ActivityType = ActivityType.CreateCourse,
+            Timestamp = DateTimeOffset.UtcNow,
+            ResourceId = course.Id.ToString(),
+            CourseId = course.Id.ToString()
+        });
         await _dbContext.SaveChangesAsync();
 
         TempData["SuccessCourse"] = "Course created successfully!";

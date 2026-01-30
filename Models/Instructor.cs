@@ -60,4 +60,9 @@ public class Instructor
   public string? ProfileImagePath { get; set; } // Optional
     
    public virtual ICollection<Course>? Courses { get; set; }
+
+    // Admin approval required before instructor can create courses
+    public bool IsApproved { get; set; } = false;
+    public DateTime? ApprovedAt { get; set; }
+    public int? ApprovedByAdminId { get; set; }
 }

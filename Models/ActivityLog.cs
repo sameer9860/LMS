@@ -9,7 +9,13 @@ public enum ActivityType
     JoinLiveClass = 7,
     LeaveLiveClass = 8,
     PostForum = 9,
-    GradeViewed = 10
+    GradeViewed = 10,
+
+    // Custom actions
+    CreateCourse = 11,
+    EnrollStudent = 12,
+    ApproveInstructor = 13,
+    CreateStudent = 14
 }
 
 public class ActivityLog

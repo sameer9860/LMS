@@ -8,6 +8,38 @@
 <!-- One row with three cards -->
 <div class="row g-4 mt-2">
 
+    <!-- Active Instructors -->
+    <div class="col-12 col-md-4">
+        <div class="card shadow-sm border-0 text-white h-100 hover-lift" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+            <div class="card-body d-flex align-items-center p-4">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                    <i class="fas fa-user-check fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="card-title mb-0 opacity-75 text-uppercase small fw-bold">Active Instructors (30d)</h6>
+                    <span class="display-6 fw-bold">@ViewBag.ActiveInstructors</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Students -->
+    <div class="col-12 col-md-4">
+        <div class="card shadow-sm border-0 text-white h-100 hover-lift" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+            <div class="card-body d-flex align-items-center p-4">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                    <i class="fas fa-user-graduate fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="card-title mb-0 opacity-75 text-uppercase small fw-bold">Active Students (30d)</h6>
+                    <span class="display-6 fw-bold">@ViewBag.ActiveStudents</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Instructors -->
+
     <!-- Total Instructors -->
     <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 text-white h-100 hover-lift" style="background: linear-gradient(135deg, #6366f1, #4338ca);">
@@ -53,6 +85,47 @@
         </div>
     </div>
 
+</div>
+
+<!-- Instructors last activity -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-user-clock me-2"></i>Instructor Activity</h5>
+                @if (ViewBag.InstructorLastActivity != null && ((IEnumerable<dynamic>)ViewBag.InstructorLastActivity).Any())
+                {
+                    <table class="table table-sm">
+                        <thead><tr><th>Instructor</th><th>Last Active</th></tr></thead>
+                        <tbody>
+                            @foreach (var x in ViewBag.InstructorLastActivity.Take(10))
+                            {
+                                var last = x.LastActivity == null ? (DateTimeOffset?)null : (DateTimeOffset?)x.LastActivity;
+                                <tr>
+                                    <td>@x.FirstName @x.LastName (@x.Username)</td>
+                                    <td>
+                                        @if (last == null)
+                                        {
+                                            <span class="text-muted">No activity</span>
+                                        }
+                                        else
+                                        {
+                                            var daysAgo = (DateTimeOffset.UtcNow - last.Value).TotalDays;
+                                            <span>@Math.Floor(daysAgo) days ago</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info">No instructor activity found.</div>
+                }
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Second row: Calendar full width -->

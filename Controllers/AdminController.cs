@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using LMS.Models;
 using LMS.ViewModels;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 public class AdminController : Controller
 {
@@ -22,41 +23,191 @@ public class AdminController : Controller
 
 
 
-   public IActionResult Dashboard()
-{
-    var username = User.Identity!.Name;
 
-    if (string.IsNullOrEmpty(username))
-    {
-        return Unauthorized();
-    }
 
-    // Find logged-in user (assuming this is an admin/superadmin)
-    var currentUser = _dbContext.Users.FirstOrDefault(u => u.Username == username);
-
-    if (currentUser == null)
-    {
-        return Unauthorized();
-    }
-
-    // Count all instructors and students (since admin/superadmin oversees all)
-    int instructorCount = _dbContext.Users.Count(u => u.Role == "Instructor");
-    int studentCount = _dbContext.Users.Count(u => u.Role == "Student");
-
-    // If you want to count only users created by this admin (if you have a CreatedBy field)
-    // int instructorCount = _dbContext.Users.Count(u => u.Role == "Instructor" && u.CreatedBy == currentUser.Id);
-    // int studentCount = _dbContext.Users.Count(u => u.Role == "Student" && u.CreatedBy == currentUser.Id);
-
-    ViewBag.InstructorCount = instructorCount;
-    ViewBag.StudentCount = studentCount;
-
-    return View();
-}
-
-    // GET: Show form to create instructor
+    // ===== New: Create Student (Admin only) =====
     [HttpGet]
-    public IActionResult CreateInstructor()
+    public IActionResult CreateStudent()
     {
+        ViewBag.Instructors = new SelectList(_dbContext.Instructors.ToList(), "id", "FirstName");
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateStudent(StudentViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        // Create user
+        var user = new User
+        {
+            Username = model.Username,
+            Password = model.Password, // hash in prod
+            Role = "Student"
+        };
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+
+        string imagePath = null;
+        if (model.ProfileImage != null)
+        {
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "students");
+            Directory.CreateDirectory(uploadsFolder);
+            var fileName = Path.GetRandomFileName() + Path.GetExtension(model.ProfileImage.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+                await model.ProfileImage.CopyToAsync(stream);
+            imagePath = Path.Combine("uploads", "students", fileName).Replace("\\", "/");
+        }
+
+        var student = new Student
+        {
+            FirstName = model.FirstName,
+            MiddleName = model.MiddleName,
+            LastName = model.LastName,
+            Email = model.Email,
+            PhoneNumber = model.PhoneNumber,
+            Gender = model.Gender,
+            DateOfBirth = model.DateOfBirth,
+            Grade = model.Grade,
+            EnrollmentDate = model.EnrollmentDate,
+            GuardianName = model.GuardianName,
+            GuardianPhone = model.GuardianPhone,
+            Address = model.Address,
+            ProfileImagePath = imagePath,
+            UserId = user.Id,
+            Instructorid = model.InstructorId
+        };
+
+        _dbContext.Students.Add(student);
+        await _dbContext.SaveChangesAsync();
+
+        // Activity log
+        _dbContext.ActivityLogs.Add(new ActivityLog
+        {
+            UserId = user.Id.ToString(),
+            ActivityType = ActivityType.CreateStudent,
+            Timestamp = DateTimeOffset.UtcNow,
+            CourseId = null,
+            MetadataJson = null
+        });
+        await _dbContext.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Student created successfully!";
+        return RedirectToAction("Dashboard");
+    }
+
+    // GET: pending instructors
+    [HttpGet]
+    public IActionResult PendingInstructors()
+    {
+        var pending = _dbContext.Instructors.Where(i => !i.IsApproved).Include(i => i.User).ToList();
+        return View(pending);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ApproveInstructor(int id)
+    {
+        var instructor = await _dbContext.Instructors.FirstOrDefaultAsync(i => i.id == id);
+        if (instructor == null) return NotFound();
+
+        instructor.IsApproved = true;
+        instructor.ApprovedAt = DateTime.UtcNow;
+        // If you want link to admin user, try to find current admin user id
+        var adminUsername = User.Identity?.Name;
+        var adminUser = _dbContext.Users.FirstOrDefault(u => u.Username == adminUsername);
+        instructor.ApprovedByAdminId = adminUser?.Id;
+        await _dbContext.SaveChangesAsync();
+
+        // Log activity
+        _dbContext.ActivityLogs.Add(new ActivityLog
+        {
+            UserId = adminUser?.Id.ToString(),
+            ActivityType = ActivityType.ApproveInstructor,
+            Timestamp = DateTimeOffset.UtcNow,
+            ResourceId = instructor.id.ToString(),
+            MetadataJson = null
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Notify instructor if user exists
+        if (instructor.UserId > 0)
+        {
+            var notification = new Notification
+            {
+                UserId = instructor.UserId,
+                Title = "Instructor Approved",
+                Message = "Your instructor account has been approved by admin. You may now create courses.",
+                NotificationType = "instructor_approved",
+                RelatedId = instructor.id,
+                IconClass = "fas fa-check",
+                ActionUrl = "/Instructor/CreateCourse",
+                CreatedAt = DateTime.Now,
+                IsRead = false
+            };
+            _dbContext.Notifications.Add(notification);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        TempData["SuccessMessage"] = "Instructor approved.";
+        return RedirectToAction("PendingInstructors");
+    }
+
+    public IActionResult Dashboard()
+    {
+        var username = User.Identity!.Name;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        // Find logged-in user (assuming this is an admin/superadmin)
+        var currentUser = _dbContext.Users.FirstOrDefault(u => u.Username == username);
+
+        if (currentUser == null)
+        {
+            return Unauthorized();
+        }
+
+        // Count all instructors and students (since admin/superadmin oversees all)
+        int instructorCount = _dbContext.Users.Count(u => u.Role == "Instructor");
+        int studentCount = _dbContext.Users.Count(u => u.Role == "Student");
+
+        // Active = users with any activity in last 30 days
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
+        int activeInstructors = _dbContext.ActivityLogs
+            .Where(a => a.Timestamp >= cutoff)
+            .Join(_dbContext.Users, a => a.UserId, u => u.Id.ToString(), (a, u) => u)
+            .Count(u => u.Role == "Instructor");
+
+        int activeStudents = _dbContext.ActivityLogs
+            .Where(a => a.Timestamp >= cutoff)
+            .Join(_dbContext.Users, a => a.UserId, u => u.Id.ToString(), (a, u) => u)
+            .Count(u => u.Role == "Student");
+
+        // Instructors last active
+        var instructorLastActivity = _dbContext.Instructors
+            .Include(i => i.User)
+            .Select(i => new {
+                i.id,
+                i.FirstName,
+                i.LastName,
+                Username = i.User != null ? i.User.Username : null,
+                LastActivity = _dbContext.ActivityLogs
+                    .Where(al => i.User != null && al.UserId == i.User.Id.ToString())
+                    .OrderByDescending(al => al.Timestamp)
+                    .Select(al => al.Timestamp).FirstOrDefault()
+            })
+            .OrderByDescending(x => x.LastActivity)
+            .ToList();
+
+        ViewBag.InstructorCount = instructorCount;
+        ViewBag.StudentCount = studentCount;
+        ViewBag.ActiveInstructors = activeInstructors;
+        ViewBag.ActiveStudents = activeStudents;
+        ViewBag.InstructorLastActivity = instructorLastActivity;
+
         return View();
     }
 
