@@ -1011,5 +1011,23 @@ document.addEventListener("DOMContentLoaded", function () {
             usernameSpan.textContent = username;
         });
     }
+
+    // Activate a tab if ?tab= is provided in the URL (e.g., ?tab=participants)
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab) {
+            const selector = `#${tab}-tab`;
+            const tabEl = document.querySelector(selector);
+            if (tabEl) {
+                try {
+                    var bsTab = new bootstrap.Tab(tabEl);
+                    bsTab.show();
+                } catch (e) {
+                    // ignore if bootstrap not available yet
+                }
+            }
+        }
+    })();
 </script>
 

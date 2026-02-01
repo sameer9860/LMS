@@ -205,36 +205,41 @@
             <ul class="nav flex-column">
                 @if (isAdmin)
                 {
-                    <li><a href="@Url.Action("Dashboard", "Admin")" class="nav-link"><i class="fas fa-th-large"></i>
-                            <span>Dashboard</span></a></li>
-                    <li><a href="@Url.Action("CreateInstructor", "Admin")" class="nav-link"><i class="fas fa-chalkboard-teacher"></i> <span>Create Instructor</span></a></li>
+                    <li><a href="@Url.Action("Dashboard", "Admin")" class="nav-link"><i class="fas fa-th-large"></i> <span>Dashboard</span></a></li>
 
-                    <li><a href="@Url.Action("CreateStudent", "Admin")" class="nav-link"><i class="fas fa-user-plus"></i> <span>Create Student</span></a></li>
-                    <li><a href="@Url.Action("StudentList", "Admin")" class="nav-link"><i class="fas fa-list"></i> <span>Student List</span></a></li>
-                    <li><a href="@Url.Action("InstructorList", "Admin")" class="nav-link"><i class="fas fa-user-graduate"></i>
-                            <span>Instructor List</span></a></li>
-                    <li><a href="@Url.Action("PendingInstructors", "Admin")" class="nav-link"><i class="fas fa-hourglass-half"></i> <span>Pending Approvals</span></a></li>
+                    <!-- Instructors group -->
+                    <li>
+                        <a class="nav-link" data-bs-toggle="collapse" href="#adminInstructorsMenu" role="button" aria-expanded="false" aria-controls="adminInstructorsMenu">
+                            <i class="fas fa-chalkboard-teacher"></i> <span>Instructors</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </a>
+                        <div class="collapse" id="adminInstructorsMenu">
+                            <ul class="nav flex-column ms-3">
+                                <li><a href="@Url.Action("CreateInstructor", "Admin")" class="nav-link"><i class="fas fa-plus"></i> <span>Create Instructor</span></a></li>
+                                <li><a href="@Url.Action("InstructorList", "Admin")" class="nav-link"><i class="fas fa-list"></i> <span>Instructor List</span></a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- Students group -->
+                    <li>
+                        <a class="nav-link" data-bs-toggle="collapse" href="#adminStudentsMenu" role="button" aria-expanded="false" aria-controls="adminStudentsMenu">
+                            <i class="fas fa-user-graduate"></i> <span>Students</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </a>
+                        <div class="collapse" id="adminStudentsMenu">
+                            <ul class="nav flex-column ms-3">
+                                <li><a href="@Url.Action("CreateStudent", "Admin")" class="nav-link"><i class="fas fa-user-plus"></i> <span>Create Student</span></a></li>
+                                <li><a href="@Url.Action("StudentList", "Admin")" class="nav-link"><i class="fas fa-list"></i> <span>Student List</span></a></li>
+                            </ul>
+                        </div>
+                    </li>
                 }
                 else if (isInstructor)
                 {
                     <li><a href="@Url.Action("Dashboard", "Instructor")" class="nav-link"><i class="fas fa-th-large"></i>
                             <span>Dashboard</span></a></li>
-                    <!-- Students collapsible menu -->
-                    <li>
-                        <a class="nav-link" data-bs-toggle="collapse" href="#studentsMenu" role="button" aria-expanded="false"
-                            aria-controls="studentsMenu">
-                            <i class="fas fa-users"></i> <span>Students</span>
-                            <i class="fas fa-chevron-down ms-auto"></i>
-                        </a>
-                        <div class="collapse" id="studentsMenu">
-                            <ul class="nav flex-column ms-3">
-                                <li><a href="@Url.Action("EnrollStudents", "Instructor")" class="nav-link"><i
-                                            class="fas fa-user-plus"></i> <span>Add Students</span></a></li>
-                                <li><a href="@Url.Action("StudentList", "Instructor")" class="nav-link"><i
-                                            class="fas fa-list"></i> <span>Student List</span></a></li>
-                            </ul>
-                        </div>
-                    </li>
+                 
                     <!-- Courses collapsible menu -->
                     <li>
                         <a class="nav-link" data-bs-toggle="collapse" href="#coursesMenu" role="button" aria-expanded="false"
@@ -485,6 +490,32 @@ loadNotifications();
     <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">
         <i class="fas fa-moon"></i>
     </button>
+
+    <!-- SweetAlert2 (global for dashboard pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]'
+                });
+            </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: '@TempData["ErrorMessage"]'
+                });
+            </text>
+        }
+    </script>
     
     @RenderSection("Scripts", required: false)
 </body>

@@ -1,5 +1,21 @@
 @model ActivityLogFilterViewModel
 
+@functions {
+    public string ActivityLabel(ActivityType t)
+    {
+        return t switch
+        {
+            ActivityType.ViewMaterial => "Material View",
+            ActivityType.DownloadMaterial => "Download Material",
+            ActivityType.SubmitAssignment => "Submit Assignment",
+            ActivityType.SubmitQuiz => "Submit Quiz",
+            ActivityType.JoinLiveClass => "Join Live Class",
+            ActivityType.LeaveLiveClass => "Leave Live Class",
+            _ => t.ToString()
+        };
+    }
+}
+
 @{
     Layout = "~/Views/Shared/DashboardLayout.cshtml";
 }
@@ -65,14 +81,26 @@
     </div>
 </div>
 
-<!-- Results Summary -->
-@if (Model.Logs != null && Model.Logs.Any())
-{
-    <div class="alert alert-info mb-3">
-        <i class="bi bi-info-circle me-2"></i>
-        Found <strong>@Model.Logs.Count</strong> activity log(s)
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="mb-3">Activity Breakdown 📊</h6>
+                <canvas id="studentActivityChart" width="300" height="300"></canvas>
+            </div>
+        </div>
     </div>
-}
+    <div class="col-md-8">
+        <!-- Results Summary -->
+        @if (Model.Logs != null && Model.Logs.Any())
+        {
+            <div class="alert alert-info mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                Found <strong>@Model.Logs.Count</strong> activity log(s)
+            </div>
+        }
+    </div>
+</div>
 
 <div class="table-responsive shadow-sm rounded">
     <table class="table table-bordered table-striped table-hover align-middle mb-0">
@@ -112,14 +140,42 @@
                             <small>@log.Timestamp.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</small>
                         </td>
                         <td>
-                            <span class="badge bg-primary">@log.ActivityType</span>
+                            <span class="badge bg-primary">@ActivityLabel(log.ActivityType)</span>
                         </td>
                         <td>
                             <small>@(log.CourseName ?? "N/A")</small>
                         </td>
                         <td>
                             <small class="text-truncate d-inline-block" style="max-width: 150px;" title="@log.ResourceTitle">
-                                @(log.ResourceTitle ?? "N/A")
+                                @if (!string.IsNullOrEmpty(log.ResourceId))
+                                {
+                                    var rid = log.ResourceId;
+                                    switch (log.ActivityType)
+                                    {
+                                        case ActivityType.ViewMaterial:
+                                            <a href="@Url.Action("ViewMaterial", "Student", new { id = rid })">@log.ResourceTitle</a>;
+                                            break;
+                                        case ActivityType.DownloadMaterial:
+                                            <a href="@Url.Action("DownloadMaterial", "Student", new { id = rid })">@log.ResourceTitle</a>;
+                                            break;
+                                        case ActivityType.StartAssignment:
+                                            <a href="@Url.Action("CourseDetails", "Student", new { id = log.CourseId, tab = "assignments" })">@log.ResourceTitle</a>;
+                                            break;
+                                        case ActivityType.SubmitAssignment:
+                                            <a href="@Url.Action("MySubmissions", "Student")">@log.ResourceTitle</a>;
+                                            break;
+                                        case ActivityType.JoinLiveClass:
+                                            <a href="@Url.Action("JoinLiveClass", "Student", new { id = rid })">@log.ResourceTitle</a>;
+                                            break;
+                                        default:
+                                            @log.ResourceTitle
+                                            break;
+                                    }
+                                }
+                                else
+                                {
+                                    @("N/A")
+                                }
                             </small>
                         </td>
                         <td>
@@ -147,3 +203,40 @@
         </tbody>
     </table>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let studentActivityChart;
+    function loadStudentActivityChart() {
+        const studentId = '@Context.Request.RouteValues["id"]';
+        const courseId = encodeURIComponent(document.querySelector('input[name="CourseId"]').value || '');
+        const from = document.querySelector('input[name="FromDate"]').value || '';
+        const to = document.querySelector('input[name="ToDate"]').value || '';
+        const url = `/Admin/GetStudentActivityBreakdown?studentId=${studentId}${courseId ? '&courseId=' + courseId : ''}${from ? '&fromDate=' + from : ''}${to ? '&toDate=' + to : ''}`;
+
+        fetch(url).then(r => r.json()).then(data => {
+            const labels = data.map(x => x.label);
+            const counts = data.map(x => x.count);
+            const colors = ['#007bff', '#17a2b8', '#28a745', '#ffc107', '#6f42c1', '#dc3545'];
+
+            if (studentActivityChart) { studentActivityChart.destroy(); }
+
+            const ctx = document.getElementById('studentActivityChart').getContext('2d');
+            studentActivityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{ data: counts, backgroundColor: colors }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadStudentActivityChart();
+    });
+</script>

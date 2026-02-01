@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Views.Data;
 
@@ -18,15 +19,16 @@ namespace LMS.Controllers
         private readonly ApplicationDbContext _dbContext;
         private readonly IAIQuizService _aiQuizService;
         private readonly IWebHostEnvironment _env;
+    private readonly IActivityService _activity;
 
-        public QuizController(ApplicationDbContext dbContext, IAIQuizService aiQuizService, IWebHostEnvironment env)
-        {
-            _dbContext = dbContext;
-            _aiQuizService = aiQuizService;
-            _env = env;
-        }
+    public QuizController(ApplicationDbContext dbContext, IAIQuizService aiQuizService, IWebHostEnvironment env, IActivityService activity)
+    {
+        _dbContext = dbContext;
+        _aiQuizService = aiQuizService;
+        _env = env;
+        _activity = activity;
+    }
 
-        // ================= Auto Quiz =================
         [HttpGet("AutoQuiz")]
         public IActionResult AutoQuiz(int courseId)
         {
@@ -387,6 +389,28 @@ namespace LMS.Controllers
                     _dbContext.Notifications.Add(notification);
                     await _dbContext.SaveChangesAsync();
                 }
+            }
+
+            // Log quiz submission activity for admin analytics
+            try
+            {
+                var quizWithCourseFull = await _dbContext.Quizzes.Include(q => q.Course).FirstOrDefaultAsync(q => q.Id == model.QuizId);
+                await _activity.LogAsync(new ActivityLog
+                {
+                    UserId = student.User!.Id.ToString(),
+                    ActivityType = ActivityType.SubmitQuiz,
+                    Timestamp = DateTimeOffset.Now,
+                    CourseId = quizWithCourseFull?.CourseId.ToString(),
+                    ResourceId = submission.Id.ToString(),
+                    MetadataJson = JsonSerializer.Serialize(new {
+                        ResourceTitle = quizWithCourseFull?.Title,
+                        CourseDisplay = (quizWithCourseFull?.Course != null ? (quizWithCourseFull.Course.ShortName ?? quizWithCourseFull.Course.FullName) + "(" + (quizWithCourseFull.Course.CourseIdNumber ?? "") + ")" : null)
+                    })
+                });
+            }
+            catch (Exception)
+            {
+                // swallow logging errors to avoid affecting quiz submission flow
             }
 
             // Calculate percentage

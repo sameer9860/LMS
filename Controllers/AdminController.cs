@@ -96,7 +96,7 @@ public class AdminController : Controller
         await _dbContext.SaveChangesAsync();
 
         TempData["SuccessMessage"] = "Student created successfully!";
-        return RedirectToAction("Dashboard");
+        return RedirectToAction("StudentList");
     }
 
     // GET: pending instructors
@@ -580,6 +580,44 @@ public class AdminController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> GetStudentActivityBreakdown(int studentId, int? courseId, DateTime? fromDate, DateTime? toDate)
+    {
+        // Find student and associated user id
+        var student = await _dbContext.Students.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == studentId);
+        if (student == null || student.UserId == null) return Json(new List<object>());
+
+        var userId = student.UserId.ToString();
+
+        var from = fromDate?.ToUniversalTime() ?? DateTime.UtcNow.AddDays(-30);
+        var to = toDate?.ToUniversalTime().AddDays(1).AddTicks(-1) ?? DateTime.UtcNow;
+
+        var query = _dbContext.ActivityLogs.Where(l => l.UserId == userId && l.Timestamp >= from && l.Timestamp <= to);
+        if (courseId.HasValue)
+            query = query.Where(l => l.CourseId == courseId.Value.ToString());
+
+        var logs = await query.ToListAsync();
+
+        // Map activity categories as requested
+        var loginCount = logs.Count(l => l.ActivityType == ActivityType.Login);
+        var viewMaterialCount = logs.Count(l => l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial);
+        var submitAssignmentCount = logs.Count(l => l.ActivityType == ActivityType.SubmitAssignment);
+        var submitQuizCount = logs.Count(l => l.ActivityType == ActivityType.SubmitQuiz);
+        var joinLiveCount = logs.Count(l => l.ActivityType == ActivityType.JoinLiveClass);
+        var leaveLiveCount = logs.Count(l => l.ActivityType == ActivityType.LeaveLiveClass);
+
+        var result = new[] {
+            new { label = "Login", count = loginCount },
+            new { label = "Material View", count = viewMaterialCount },
+            new { label = "Submit Assignment", count = submitAssignmentCount },
+            new { label = "Submit Quiz", count = submitQuizCount },
+            new { label = "Join Live Class", count = joinLiveCount },
+            new { label = "Leave Live Class", count = leaveLiveCount }
+        };
+
+        return Json(result);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> GetCourseEnrollmentData()
     {
         var data = await _dbContext.Courses
@@ -769,23 +807,95 @@ public class AdminController : Controller
             .Distinct()
             .ToList();
 
-        var courses = await _dbContext.Courses.Where(c => courseIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id.ToString(), c => c.FullName);
+        var courses = await _dbContext.Courses.Where(c => courseIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id.ToString(), c => new { c.FullName, c.ShortName, c.CourseIdNumber });
 
-        var displayLogs = logs.Select(l => new ActivityLogDisplayItem
-        {
-            Id = l.Id,
-            ActivityType = l.ActivityType,
-            CourseId = l.CourseId,
-            CourseName = (!string.IsNullOrEmpty(l.CourseId) && courses.ContainsKey(l.CourseId)) ? courses[l.CourseId] : null,
-            DurationSeconds = l.DurationSeconds,
-            IpAddress = l.IpAddress,
-            MetadataJson = l.MetadataJson,
-            ResourceId = l.ResourceId,
-            ResourceTitle = l.ResourceId, // could be improved
-            Timestamp = l.Timestamp,
-            UserAgent = l.UserAgent,
-            UserId = l.UserId,
-            StudentName = (student.FirstName + " " + student.LastName).Trim()
+        // Collect resource ids per activity type to avoid N+1 queries
+        var materialIds = logs.Where(l => l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial)
+            .Select(l => { int.TryParse(l.ResourceId, out var idVal); return idVal; })
+            .Where(i => i > 0).Distinct().ToList();
+
+        var assignmentIds = logs.Where(l => l.ActivityType == ActivityType.StartAssignment)
+            .Select(l => { int.TryParse(l.ResourceId, out var idVal); return idVal; })
+            .Where(i => i > 0).Distinct().ToList();
+
+        var submissionIds = logs.Where(l => l.ActivityType == ActivityType.SubmitAssignment)
+            .Select(l => { int.TryParse(l.ResourceId, out var idVal); return idVal; })
+            .Where(i => i > 0).Distinct().ToList();
+
+        var liveClassIds = logs.Where(l => l.ActivityType == ActivityType.JoinLiveClass || l.ActivityType == ActivityType.LeaveLiveClass)
+            .Select(l => { int.TryParse(l.ResourceId, out var idVal); return idVal; })
+            .Where(i => i > 0).Distinct().ToList();
+
+        var materials = await _dbContext.Materials.Where(m => materialIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id, m => m.Title);
+        var assignments = await _dbContext.Assignments.Where(a => assignmentIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Title);
+        var submissions = await _dbContext.AssignmentSubmissions.Include(s => s.Assignment).Where(s => submissionIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s);
+        var liveClasses = await _dbContext.LiveClasses.Where(lc => liveClassIds.Contains(lc.Id)).ToDictionaryAsync(lc => lc.Id, lc => lc.Title);
+
+        var displayLogs = logs.Select(l => {
+            // Try metadata first
+            string? courseName = null;
+            string? resourceTitle = null;
+
+            if (!string.IsNullOrEmpty(l.MetadataJson))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(l.MetadataJson);
+                    if (doc.RootElement.TryGetProperty("CourseDisplay", out var cd))
+                        courseName = cd.GetString();
+                    if (doc.RootElement.TryGetProperty("ResourceTitle", out var rt))
+                        resourceTitle = rt.GetString();
+                }
+                catch { /* ignore parse errors */ }
+            }
+
+            // Fallback to course lookup
+            if (courseName == null && !string.IsNullOrEmpty(l.CourseId) && courses.ContainsKey(l.CourseId))
+            {
+                var c = courses[l.CourseId];
+                courseName = (c.ShortName ?? c.FullName) + (string.IsNullOrEmpty(c.CourseIdNumber) ? "" : ("(" + c.CourseIdNumber + ")"));
+            }
+
+            // Fallback to resource lookups by type
+            if (resourceTitle == null && !string.IsNullOrEmpty(l.ResourceId))
+            {
+                if (l.ActivityType == ActivityType.ViewMaterial || l.ActivityType == ActivityType.DownloadMaterial)
+                {
+                    if (int.TryParse(l.ResourceId, out var mid) && materials.ContainsKey(mid)) resourceTitle = materials[mid];
+                }
+                else if (l.ActivityType == ActivityType.StartAssignment)
+                {
+                    if (int.TryParse(l.ResourceId, out var aid) && assignments.ContainsKey(aid)) resourceTitle = assignments[aid];
+                }
+                else if (l.ActivityType == ActivityType.SubmitAssignment)
+                {
+                    if (int.TryParse(l.ResourceId, out var sid) && submissions.ContainsKey(sid)) resourceTitle = submissions[sid].Assignment?.Title;
+                }
+                else if (l.ActivityType == ActivityType.JoinLiveClass || l.ActivityType == ActivityType.LeaveLiveClass)
+                {
+                    if (int.TryParse(l.ResourceId, out var lcId) && liveClasses.ContainsKey(lcId)) resourceTitle = liveClasses[lcId];
+                }
+            }
+
+            // Generic fallback
+            if (resourceTitle == null) resourceTitle = l.ResourceId;
+
+            return new ActivityLogDisplayItem
+            {
+                Id = l.Id,
+                ActivityType = l.ActivityType,
+                CourseId = l.CourseId,
+                CourseName = courseName,
+                DurationSeconds = l.DurationSeconds,
+                IpAddress = l.IpAddress,
+                MetadataJson = l.MetadataJson,
+                ResourceId = l.ResourceId,
+                ResourceTitle = resourceTitle,
+                Timestamp = l.Timestamp,
+                UserAgent = l.UserAgent,
+                UserId = l.UserId,
+                StudentName = (student.FirstName + " " + student.LastName).Trim()
+            };
         }).ToList();
 
         var viewModel = new ActivityLogFilterViewModel

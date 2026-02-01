@@ -471,9 +471,12 @@ public class InstructorController : Controller
         // Get IDs of students already enrolled in this course
         var enrolledStudentIds = course.Enrollments!.Select(e => e.StudentId).ToList();
 
-        // Get students for this instructor who are NOT already enrolled
+        // Get students who are NOT already enrolled in this course (include unassigned students)
+        // Order so that students assigned to this instructor appear first
         var instructorStudents = _dbContext.Students
-            .Where(s => s.Instructorid == instructor!.id && !enrolledStudentIds.Contains(s.Id))
+            .Where(s => !enrolledStudentIds.Contains(s.Id))
+            .OrderByDescending(s => s.Instructorid == instructor!.id)
+            .ThenBy(s => s.FirstName)
             .ToList();
 
         // Get chat messages sorted by time
@@ -530,18 +533,20 @@ public class InstructorController : Controller
             var enrollment = new Enrollment
             {
                 CourseId = courseId,
-                StudentId = studentId
+                StudentId = studentId,
+                EnrollmentDate = DateTime.Now
             };
             _dbContext.Enrollments.Add(enrollment);
             await _dbContext.SaveChangesAsync();
-            TempData["SuccessEnroll"] = "Student enrolled successfully!";
+            TempData["SuccessMessage"] = "Student enrolled successfully!";
         }
         else
         {
-            TempData["ErrorMessageEnroll"] = "Student is already enrolled in this course.";
+            TempData["ErrorMessage"] = "Student is already enrolled in this course.";
         }
 
-        return RedirectToAction("CourseDetails", new { id = courseId });
+        // Redirect back to course details and open the participants tab
+        return RedirectToAction("CourseDetails", new { id = courseId, tab = "participants" });
     }
 
     [HttpGet]

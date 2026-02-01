@@ -27,9 +27,12 @@ public class StudentController : Controller
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var agent = Request.Headers["User-Agent"].ToString();
 
+        // Use numeric UserId claim for consistency with Admin activity lookups
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? User.Identity?.Name;
+
         var log = new ActivityLog
         {
-            UserId = User.Identity?.Name,
+            UserId = userIdClaim,
             CourseId = courseId,
             ResourceId = resourceId,
             ActivityType = type,
@@ -45,7 +48,7 @@ public class StudentController : Controller
     // ---------------------- DASHBOARD ------------------------
     public async Task<IActionResult> Dashboard()
     {
-        await LogAsync(ActivityType.Login);
+        // Login is recorded once in AccountController.Login to prevent duplicate entries.
 
         var username = User.Identity?.Name;
 
@@ -74,7 +77,8 @@ public class StudentController : Controller
         if (student == null)
             return Unauthorized();
 
-        await LogAsync(ActivityType.ViewMaterial, null, null, new { Page = "MyCourses" });
+        // Do not log a 'view material' for the courses list page to avoid duplicate 'view course' entries when
+        // a student immediately navigates into a specific course. Course views are logged on CourseDetails.
 
         var courses = student.Enrollments!
             .Where(e => e.Course != null)
@@ -99,7 +103,11 @@ public class StudentController : Controller
         if (course == null)
             return NotFound();
 
-        await LogAsync(ActivityType.ViewMaterial, id.ToString(), null);
+        // Log a single explicit course view with helpful metadata for admin display
+        await LogAsync(ActivityType.ViewMaterial, id.ToString(), null, new {
+            ResourceTitle = "Course Overview",
+            CourseDisplay = (course.ShortName ?? course.FullName) + (string.IsNullOrEmpty(course.CourseIdNumber) ? "" : ("(" + course.CourseIdNumber + ")"))
+        }); // viewed course details page (courseId passed)
 
         var username = User.Identity?.Name;
         var student = _dbContext.Students
@@ -153,7 +161,11 @@ public class StudentController : Controller
         if (material == null)
             return NotFound();
 
-        await LogAsync(ActivityType.ViewMaterial, material.CourseId.ToString(), id.ToString());
+        // Add metadata for easier display in admin activity log
+        await LogAsync(ActivityType.ViewMaterial, material.CourseId.ToString(), id.ToString(), new {
+            ResourceTitle = material.Title,
+            CourseDisplay = (material.Course != null ? (material.Course.ShortName ?? material.Course.FullName) + "(" + (material.Course.CourseIdNumber ?? "") + ")" : null)
+        });
 
         return View(material);
     }
@@ -167,7 +179,10 @@ public class StudentController : Controller
         if (material == null)
             return NotFound();
 
-        await LogAsync(ActivityType.DownloadMaterial, material.CourseId.ToString(), id.ToString());
+        await LogAsync(ActivityType.DownloadMaterial, material.CourseId.ToString(), id.ToString(), new {
+            ResourceTitle = material.Title,
+            CourseDisplay = (material.Course != null ? (material.Course.ShortName ?? material.Course.FullName) + "(" + (material.Course.CourseIdNumber ?? "") + ")" : null)
+        });
 
         var path = Path.Combine(_webHostEnvironment.WebRootPath, material.FilePath!);
         var fileBytes = await System.IO.File.ReadAllBytesAsync(path);
@@ -185,7 +200,10 @@ public class StudentController : Controller
         if (liveClass == null)
             return NotFound();
 
-        await LogAsync(ActivityType.JoinLiveClass, liveClass.CourseId.ToString(), id.ToString());
+        await LogAsync(ActivityType.JoinLiveClass, liveClass.CourseId.ToString(), id.ToString(), new {
+            ResourceTitle = liveClass.Title ?? ("Live class " + liveClass.Id),
+            CourseDisplay = (liveClass.Course != null ? (liveClass.Course.ShortName ?? liveClass.Course.FullName) + "(" + (liveClass.Course.CourseIdNumber ?? "") + ")" : null)
+        });
 
         return View("JoinLiveClass", liveClass);
     }
@@ -212,7 +230,10 @@ public class StudentController : Controller
         if (assign == null)
             return NotFound();
 
-        await LogAsync(ActivityType.StartAssignment, assign.CourseId.ToString(), id.ToString());
+        await LogAsync(ActivityType.StartAssignment, assign.CourseId.ToString(), id.ToString(), new {
+            ResourceTitle = assign.Title,
+            CourseDisplay = (assign.Course != null ? (assign.Course.ShortName ?? assign.Course.FullName) + "(" + (assign.Course.CourseIdNumber ?? "") + ")" : null)
+        });
 
         // Redirect to course assignments tab instead of showing a separate view
         return RedirectToAction("CourseDetails", new { id = assign.CourseId, tab = "assignments" });
@@ -293,7 +314,12 @@ public class StudentController : Controller
                 }
             }
 
-            await LogAsync(ActivityType.SubmitAssignment, submission.AssignmentId.ToString(), submission.Id.ToString());
+            // Log with correct course context and metadata
+            var assignmentForLog = assignment;
+            await LogAsync(ActivityType.SubmitAssignment, assignmentForLog?.CourseId.ToString(), submission.Id.ToString(), new {
+                ResourceTitle = assignmentForLog?.Title,
+                CourseDisplay = (assignmentForLog?.Course != null ? (assignmentForLog.Course.ShortName ?? assignmentForLog.Course.FullName) + "(" + (assignmentForLog.Course.CourseIdNumber ?? "") + ")" : null)
+            });
 
             TempData["SuccessAssignment"] = "Assignment submitted!";
         }

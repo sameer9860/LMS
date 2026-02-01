@@ -64,7 +64,6 @@
             <th class="text-nowrap">Username</th>
             <th class="text-nowrap">Date of Birth</th>
             <th class="text-nowrap">Grade</th>
-            <th class="text-nowrap">Instructor</th>
             <th class="text-nowrap" style="width: 180px;">Action</th>
         </tr>
     </thead>
@@ -79,7 +78,6 @@
                     <td>@student.User?.Username</td>
                     <td>@student.DateOfBirth.ToShortDateString()</td>
                     <td>@student.Grade</td>
-                    <td>@(student.Instructor != null ? (student.Instructor.FirstName + " " + student.Instructor.LastName) : "Unassigned")</td>
                     <td>
                         <div class="d-flex gap-1 justify-content-center">
                             <a asp-action="EditStudent" asp-controller="Admin" asp-route-id="@student.Id" class="btn btn-sm btn-outline-primary" title="Edit">
@@ -107,7 +105,7 @@
         else
         {
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">
+                <td colspan="6" class="text-center text-muted py-4">
                     <i class="bi bi-inbox me-2"></i> No students found
                 </td>
             </tr>
@@ -153,4 +151,30 @@
             usernameSpan.textContent = username;
         });
     </script>
-}
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]'
+                });
+            </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: '@TempData["ErrorMessage"]'
+                });
+            </text>
+        }
+    </script>
+} 

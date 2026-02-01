@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using LMS.Views.Data;
 using LMS.Models;
 using LMS.ViewModels;
@@ -72,9 +73,19 @@ namespace LMS.Controllers
             // ============================
             if (user.Role == "Student")
             {
+                // Try to associate the login with a course (most recently enrolled)
+                var student = _context.Students
+                    .Include(s => s.Enrollments!).ThenInclude(e => e.Course)
+                    .FirstOrDefault(s => s.UserId == user.Id);
+
+                var recentCourse = student?.Enrollments?.OrderByDescending(e => e.EnrollmentDate).FirstOrDefault()?.Course;
+                var courseId = recentCourse?.Id.ToString();
+                var courseDisplay = recentCourse != null ? (recentCourse.ShortName ?? recentCourse.FullName) + (string.IsNullOrEmpty(recentCourse.CourseIdNumber) ? "" : ("(" + recentCourse.CourseIdNumber + ")")) : null;
+
                 var activity = new ActivityLog
                 {
                     UserId = user.Id.ToString(),
+                    CourseId = courseId,
                     ActivityType = ActivityType.Login,
                     Timestamp = DateTimeOffset.UtcNow,
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
@@ -82,7 +93,8 @@ namespace LMS.Controllers
                     MetadataJson = Newtonsoft.Json.JsonConvert.SerializeObject(new
                     {
                         Message = "Student logged in successfully",
-                        Username = user.Username
+                        Username = user.Username,
+                        CourseDisplay = courseDisplay
                     })
                 };
 

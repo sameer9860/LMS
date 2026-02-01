@@ -11,6 +11,9 @@ public enum ActivityType
     PostForum = 9,
     GradeViewed = 10,
 
+    // Quiz submissions
+    SubmitQuiz = 16,
+
     // Custom actions
     CreateCourse = 11,
     EnrollStudent = 12,
