@@ -19,6 +19,41 @@ LMS is a comprehensive Learning Management System built with **ASP.NET Core MVC*
 - **Frontend**: Razor Views, Bootstrap, JavaScript
 - **AI Integration**: AI Service for Quiz Generation
 
+## How to Run
+
+Follow these steps to set up and run the project locally:
+
+1.  **Clone the Repository**
+
+    ```bash
+    git clone https://github.com/sameer9860/LMS.git
+    ```
+
+2.  **Navigate to the Project Folder**
+
+    ```bash
+    cd LMS
+    ```
+
+3.  **Configure Database**
+    Update `appsettings.json` with your MySQL database credentials.
+
+4.  **Setup Database Migrations**
+    - **Remove existing migrations:** Delete the `Migrations` folder if it exists.
+    - **Create initial migration:**
+      ```bash
+      dotnet ef migrations add InitialCreate
+      ```
+    - **Update database:**
+      ```bash
+      dotnet ef database update
+      ```
+
+5.  **Run the Application**
+    ```bash
+    dotnet run
+    ```
+
 ---
 
 ## Gallery
