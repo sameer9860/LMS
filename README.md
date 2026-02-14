@@ -1,17 +1,15 @@
 # LMS - Learning Management System
 
-LMS is a comprehensive Learning Management System built with **ASP.NET Core MVC**. It allows educational institutions to manage courses, instructors, and students efficiently. The system features real-time communication, AI-powered quiz generation, live classes, and a robust role-based access control system for Admins, Instructors, and Students.
+LMS is a comprehensive Learning Management System built with **ASP.NET Core MVC**. It allows educational institutions to manage courses, instructors, and students efficiently. The system features real-time communication, AI-powered quiz generation, live classes, and a robust role-based access control system.
 
 ## Key Features
 
-- **Role-Based Access Control**: Distinct dashboards and functionalities for Admins, Instructors, and Students.
-- **Course Management**: Create, edit, and manage courses with rich multimedia content.
-- **AI-Powered Quizzes**: Leverage AI to automatically generate quizzes for courses.
-- **Manual Quizzes & Assignments**: flexible assessment tools for instructors.
-- **Real-Time Chat**: Integrated SignalR-based chat for instant communication within courses.
-- **Live Classes**: Schedule and conduct live sessions.
-- **Grading & Analytics**: Track student progress, view submissions, and automate grading.
-- **Secure Authentication**: Built-in security for user accounts and data privacy.
+- **Role-Based Access Control**: Distinct dashboards for Admins, Instructors, and Students.
+- **Course Management**: Create, edit, and manage courses with rich multimedia.
+- **AI-Powered Quizzes**: Leverage AI to automatically generate quizzes.
+- **Real-Time Communication**: SignalR-based chat and live classes.
+- **Grading & Analytics**: Track progress and automate grading.
+- **Secure Authentication**: Built-in security for user accounts.
 
 ## Tech Stack
 
@@ -23,74 +21,103 @@ LMS is a comprehensive Learning Management System built with **ASP.NET Core MVC*
 
 ---
 
-## Screenshots
+## Gallery
 
-### 1. Admin Module
+### 1. Authentication
 
-_Manage the entire system, users, and global settings._
+**Login Page**
+![Login](ScreenShots/login.png)
 
-**Dashboard**
+---
+
+### 2. Admin Module
+
+_Complete system management control._
+
+**Dashboard Overview**
 ![Admin Dashboard](ScreenShots/adminDashboard.png)
 ![Admin Dashboard 2](ScreenShots/adminDashboard2.png)
 ![Admin Dashboard 3](ScreenShots/adminDashboard3.png)
 
-**User Management (Instructors & Students)**
+**Instructor Management Workflow**
+_Viewing, Adding, and Deleting Instructors_
 ![Instructor List](ScreenShots/instructorList.png)
-![Add Instructor 1](ScreenShots/addInstructor1.png)
-![Add Instructor 2](ScreenShots/addInstructor2.png)
-![Student List](ScreenShots/studentList.png)
-![Create Student 1](ScreenShots/createStudent1.png)
+![Add Instructor Step 1](ScreenShots/addInstructor1.png)
+![Add Instructor Step 2](ScreenShots/addInstructor2.png)
+![Add Instructor Step 3](ScreenShots/addInstructor3.png)
+![Success Message](ScreenShots/successInstructor.png)
+![Confirm Delete](ScreenShots/confirmDeleteInstructor.png)
 
-**Profile & Settings**
+**Student Management Workflow**
+_Viewing and Adding Students_
+![Student List](ScreenShots/studentList.png)
+![Create Student Step 1](ScreenShots/createStudent1.png)
+![Create Student Step 2](ScreenShots/createStudent2.png)
+![Create Student Step 3](ScreenShots/createStudent3.png)
+![Create Student Step 4](ScreenShots/createStudent4.png)
+![Success Message](ScreenShots/sucessStudent.png)
+
+**Profile & Security**
 ![Admin Profile](ScreenShots/adminProfile.png)
+![Change Password](ScreenShots/adminChangePassword.png)
 
 ---
 
-### 2. Instructor Module
+### 3. Instructor Module
 
-_Create courses, manage content, and assess students._
+_Course creation, student assessment, and monitoring._
 
 **Dashboard**
 ![Instructor Dashboard](ScreenShots/instructorDashboard.png)
 ![Instructor Dashboard 2](ScreenShots/instructorDashboard2.png)
+![Instructor Dashboard 3](ScreenShots/instructorDashboard3.png)
+![Instructor Dashboard 4](ScreenShots/instructorDashboard4.png)
 
 **Course Management**
+![My Courses](ScreenShots/myCourse.png)
 ![Create Course](ScreenShots/createCourse.png)
 ![Edit Course](ScreenShots/editCourse.png)
-![My Courses](ScreenShots/myCourse.png)
 ![Course Description](ScreenShots/courseDescription.png)
 ![Course Materials](ScreenShots/courseMaterials.png)
 ![Course Participants](ScreenShots/courseParticipants.png)
 
-**Interactive Features**
+**Assessments (Assignments & Quizzes)**
+![Assignment List](ScreenShots/courseAssignment.png)
+![Assignment Details](ScreenShots/courseAssignment2.png)
+![Auto Quiz Generation](ScreenShots/courseAutoQuiz.png)
+![Manual Quiz Creation](ScreenShots/courseManualQUiz.png)
+![Manual Quiz Description](ScreenShots/courseManualQuizDescription.png)
+
+**Grading & Student Monitoring**
+![Student Activity](ScreenShots/specificStudentActivity.png)
+![View Submissions](ScreenShots/instructorViewSubmissions.png)
+![Grading Interface](ScreenShots/instructorViewSubmissionsGrading.png)
+![Graded Submission](ScreenShots/instructorViewSubmissionsGraded.png)
+![Quiz Submissions](ScreenShots/instructorQuizSubmissions.png)
+![Quiz Graded](ScreenShots/instructorQuizGraded.png)
+
+**Communication**
 ![Course Chat](ScreenShots/courseChat.png)
 ![Live Class](ScreenShots/courseLiveClass.png)
 
-**Assignments & Quizzes**
-![Course Assignment](ScreenShots/courseAssignment.png)
-![Auto Quiz](ScreenShots/courseAutoQuiz.png)
-![Manual Quiz](ScreenShots/courseManualQUiz.png)
-
-**Grading & Submissions**
-![View Submissions](ScreenShots/instructorViewSubmissions.png)
-![Grading](ScreenShots/instructorViewSubmissionsGrading.png)
-![Quiz Graded](ScreenShots/instructorQuizGraded.png)
-
-**Profile**
+**Profile & Security**
 ![Instructor Profile](ScreenShots/instructorProfile.png)
+![Profile View](ScreenShots/istructoProfile.png)
+![Change Password](ScreenShots/instructorChangePassword.png)
 
 ---
 
-### 3. Student Module
+### 4. Student Module
 
-_Access courses, take quizzes, and track progress._
+_Learning environment, quiz taking, and progress tracking._
 
 **Dashboard**
 ![Student Dashboard](ScreenShots/studentDashboard.png)
 ![Student Dashboard 2](ScreenShots/studentDashboard2.png)
 
-**Course Interaction**
+**Course Experience**
 ![Course List](ScreenShots/studentCourseLists.png)
+![Course Description](ScreenShots/studentCourseDescription.png)
 ![Course Materials](ScreenShots/studentCourrseMaterials.png)
 ![Course Chat](ScreenShots/studentCourseChat.png)
 ![Live Class](ScreenShots/studentCourseLiveClass.png)
@@ -101,7 +128,11 @@ _Access courses, take quizzes, and track progress._
 ![Taking Quiz](ScreenShots/studentCourseDemoQuizTaking.png)
 ![Quiz Submission](ScreenShots/studentCourseDemoQuizSubmission.png)
 ![Quiz Result](ScreenShots/studentCourseDemoQuizResult.png)
+![Assignment Scores](ScreenShots/studentCourseAssignmentQuizScores.png)
 
 **Results & Profile**
-![Results and Grades](ScreenShots/studentResultsAndGrade.png)
+![Results & Grades](ScreenShots/studentResultsAndGrade.png)
+![Results Detailed](ScreenShots/studentResultsAndGrade2.png)
 ![Student Profile](ScreenShots/studentProfile.png)
+![Profile Details](ScreenShots/studentProfileStudent.png)
+![Change Password](ScreenShots/studentChangePassword.png)
