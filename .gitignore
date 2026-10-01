@@ -52,3 +52,53 @@ Thumbs.db
 # Uploads and submissions
 wwwroot/uploads/
 wwwroot/submissions/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log Files
+*.log
+
+# Configuration Files (local/development)
+appsettings.Development.*.json
+
+# SSL/TLS Certificates
+*.pfx
+*.pem
+*.key
+*.crt
+
+# Node/NPM
+package-lock.json
+yarn.lock
+
+# Testing
+coverage/
+test-results/
+.nyc_output/
+
+# Azure
+local.settings.json
+.azure/
+
+# Temporary/Backup files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# IDE Local Settings
+.vscode/launch.json
+.vscode/settings.json
+.editorconfig.local
+
+# NuGet
+.nuget/
+
+# Database snapshots
+*.dbmdl
+*.mdb
